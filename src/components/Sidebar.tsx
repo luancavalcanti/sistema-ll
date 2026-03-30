@@ -79,7 +79,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.href = "/sistema2//login";
+      window.location.href = "/login";
     } catch (error) {
       console.error("Erro ao sair:", error);
     }
