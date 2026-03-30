@@ -107,7 +107,7 @@ export const atualizarMovimento = async (id: string, dados: Partial<IMovimento>)
       favorecido: dados.favorecido || '',
       classificacao: dados.classificacao || '',
       observacao: dados.observacao || '',
-      demanda_numero: dados.demanda || '', // Usamos o padrão do nosso SQL
+      demanda: dados.demanda || '', // Usamos o padrão do nosso SQL
     })
     .eq('id', id);
 

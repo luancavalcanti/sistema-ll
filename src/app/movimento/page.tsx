@@ -35,6 +35,7 @@ import RegrasOcultacaoModal from "./_components/RegrasOcultacaoModal";
 import Title from "@/components/Title";
 import ResumoFinanceiro from "./_components/ResumoFinanceiro";
 import MovimentoCard from "./_components/MovimentoCard";
+import { NodeNextRequest } from "next/dist/server/base-http/node";
 
 const MESES = [
   { valor: "01", nome: "Janeiro" },
@@ -301,9 +302,10 @@ export default function MovimentoPage() {
                 color="success"
                 startIcon={<DownloadIcon />}
                 onClick={exportarParaExcel}
-                sx={{ fontWeight: "bold" }}
+                sx={{ borderRadius: 2 }}
               >
-                Exportar Excel
+                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Exportar Excel</Typography>
+                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>xls</Typography>
               </Button>
               <Button
                 variant="contained"
@@ -312,7 +314,8 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalRegrasOpen(true)}
               >
-                Ocultar Registros
+                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Ocultar Registros</Typography>
+                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>Ocultar</Typography>
               </Button>
               <Button
                 variant="contained"
@@ -321,7 +324,8 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalOfxOpen(true)}
               >
-                Importar OFX
+                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Importar OFX</Typography>
+                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>OFX</Typography>
               </Button>
             </>
           )}

@@ -268,7 +268,7 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
         </Typography>
         {/* Mostra o código de verificação embaixo da data na listagem */}
         {nota.codigo_verificacao && (
-          <Typography variant="caption" sx={{ color: "text.disabled", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "text.disabled", display: { xs: "none", sm: "none", md: "block" } }}>
             Cód: {nota.codigo_verificacao}
           </Typography>
         )}
