@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { Button, CircularProgress } from "@mui/material";
 import { PictureAsPdf as PdfIcon } from "@mui/icons-material";
 import { gerarRelatorioContabilPDF } from "./gerarRelatorioContabilPDF";
-import { INotaFiscalFlat } from "./NotaFiscalCard";
+import { INotaFiscalUI } from "../page";
 
 interface BotaoBaixarPDFProps {
   mes: string;
   ano: string;
-  faturadas: INotaFiscalFlat[];
-  creditadas: INotaFiscalFlat[];
-  comDesconto: INotaFiscalFlat[];
+  faturadas: INotaFiscalUI[];
+  creditadas: INotaFiscalUI[];
+  comDesconto: INotaFiscalUI[];
 }
 
 export default function BotaoBaixarPDF({ mes, ano, faturadas, creditadas, comDesconto }: BotaoBaixarPDFProps) {

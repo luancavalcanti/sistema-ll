@@ -12,7 +12,7 @@ import {
 // 👇 Importamos a interface direto da página pai
 import { INotaFiscalUI } from "../page";
 
-interface NotaFiscalCardProps {
+export interface NotaFiscalCardProps {
   nota: INotaFiscalUI;
   onClick: () => void;
 }
