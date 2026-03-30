@@ -101,6 +101,7 @@ export default function Sidebar() {
               alt="LL Engenharia logo"
               width={33}
               height={50}
+              unoptimized={true}
             />
           </Box>
         )}

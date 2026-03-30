@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       {
         source: '/',
         destination: '/sistema2',
-        basePath: false, // 👈 Importante: impede que ele procure /sistema2/sistema2
+        basePath: false,
         permanent: true,
       },
     ];
