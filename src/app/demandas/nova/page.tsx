@@ -108,7 +108,17 @@ export default function NovaDemandaPage() {
     setSaving(true);
 
     try {
-      await criarDemanda(demanda, user.uid);
+      // 1. Garantimos que os tipos batem com a interface IDemanda
+      const demandaFormatada = {
+        ...demanda,
+        numero: Number(demanda.numero),
+        // Se o seu valor também estiver dando erro de string, já garantimos a conversão dele aqui:
+        valor: typeof demanda.valor === 'string' ? parseFloat(demanda.valor.replace(',', '.')) : (demanda.valor || 0)
+      };
+
+      // 2. Trocamos o user.uid (Firebase) por user.id (Supabase)
+      await criarDemanda(demandaFormatada, user.id);
+      
       router.push('/demandas');
     } catch (error) {
       console.error("Erro ao criar demanda:", error);
