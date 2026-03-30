@@ -96,7 +96,13 @@ export default function Sidebar() {
       >
         {!isCollapsed && (
           <Box sx={{ display: "flex", alignItems: "center", m: 2 }}>
-            <img src="/sistema2/logo-completa.png" alt="LL Engenharia logo" />
+            <Image
+              src="/logo.png"
+              alt="LL Engenharia logo"
+              width={33}
+              height={50}
+              unoptimized={false}
+            />
           </Box>
         )}
         <IconButton
