@@ -72,11 +72,9 @@ export default function LoginPage() {
               margin: "0 auto 20px",
             }}
           >
-            <Image
+            <img
               src="/logo-completa.png"
               alt="LL Engenharia"
-              fill // 👈 Diz para a imagem ocupar 100% do tamanho da Div pai
-              unoptimized={true}
               style={{
                 objectFit: "contain", // 👈 Garante que a imagem caiba toda dentro da Div sem cortar
               }}
