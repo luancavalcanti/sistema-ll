@@ -40,7 +40,7 @@ export default function DemandasPage() {
     };
 
     iniciar();
-  }, [user, isAdmin, authLoading]);
+  }, [user?.id, isAdmin, authLoading]);
 
   // Lógica de Filtro em Memória (Rápida)
   const demandasFiltradas = useMemo(() => {

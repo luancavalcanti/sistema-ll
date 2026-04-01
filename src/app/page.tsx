@@ -1,49 +1,33 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Typography,
-  Box,
-  Paper,
-  Card,
-  CardContent,
-  useTheme,
-  alpha,
-  CircularProgress,
-} from "@mui/material";
+import { Box, useTheme, CircularProgress, Paper, Typography } from "@mui/material";
 import {
   Assignment as DemandasIcon,
   Receipt as NFIcon,
   TrendingUp as ResultadoIcon,
 } from "@mui/icons-material";
+
+// Contextos e Componentes Base
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  // 👇 Adicionamos o Cell aqui para colorir as barras dinamicamente
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  ReferenceLine,
-} from "recharts";
 import Title from "@/components/Title";
 
+// Componentes Modularizados do Dashboard
+import StatCard from "@/components/dashboard/StatCard";
+import FaturamentoChart from "@/components/dashboard/FaturamentoChart";
+import ResultadoChart from "@/components/dashboard/ResultadoChart";
+
+// Serviços (Certifique-se de que os caminhos estão corretos para o seu projeto)
 import { buscarDemandas } from "@/services/demandasService";
 import { buscarTodasNotasFiscais } from "@/services/faturamentosService";
-import { buscarTodosMovimentos } from "@/services/movimentosService";
+import { buscarRegrasOcultacao, buscarTodosMovimentos } from "@/services/movimentosService";
 
 export default function DashboardPage() {
   const { user, role } = useAuth();
   const theme = useTheme();
 
   const [loading, setLoading] = useState(true);
-
-  // 👇 Adicionamos o nome do mês e os totais anuais ao estado
+  const [chartData, setChartData] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({
     demandasAprovadas: 0,
     fatMesAnterior: 0,
@@ -52,8 +36,6 @@ export default function DashboardPage() {
     totalFat12m: 0,
     totalRes12m: 0,
   });
-
-  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user || !role) return;
@@ -65,6 +47,7 @@ export default function DashboardPage() {
         let demandas: any[] = [];
         let faturamentos: any[] = [];
         let movimentos: any[] = [];
+        let regrasOcultacao: string[] = [];
 
         if (role === "admin" || role === "user") {
           demandas = await buscarDemandas(user, role === "admin");
@@ -74,19 +57,44 @@ export default function DashboardPage() {
 
         if (role === "admin" || role === "consulta") {
           faturamentos = await buscarTodasNotasFiscais();
+          // 👇 Busca os movimentos E as regras
           movimentos = await buscarTodosMovimentos();
+          regrasOcultacao = await buscarRegrasOcultacao(); 
         } else if (role === "user") {
           const allFats = await buscarTodasNotasFiscais();
           const allMovs = await buscarTodosMovimentos();
+          regrasOcultacao = await buscarRegrasOcultacao(); // 👇 Busca para o User também
+
           faturamentos = allFats.filter((f) =>
-            meusNumerosDemandas.includes(String(f.demandaId)),
+            meusNumerosDemandas.includes(String(f.demandaId))
           );
           movimentos = allMovs.filter((m) =>
-            meusNumerosDemandas.includes(
-              String(m.demanda_numero || m.demandaId),
-            ),
+            meusNumerosDemandas.includes(String(m.demanda_numero || m.demandaId))
           );
         }
+
+        // --- 👇 FUNÇÕES AUXILIARES ---
+        const getAnoMesLocal = (dataString: string) => {
+          if (!dataString) return "";
+          const data = new Date(dataString);
+          const ano = data.getFullYear();
+          const mes = String(data.getMonth() + 1).padStart(2, "0");
+          return `${ano}-${mes}`;
+        };
+
+        const normalizarTexto = (texto?: string) => {
+          if (!texto) return "";
+          return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        };
+
+        const regrasLimpas = regrasOcultacao.map((regra) => normalizarTexto(regra));
+
+        // 👇 Aplica a regra de ocultação logo de cara (Igual no seu useMemo de Movimentos)
+        const movimentosValidos = movimentos.filter((mov) => {
+          const textoDescricao = mov.descricao || "";
+          const descricaoLimpa = normalizarTexto(textoDescricao);
+          return !regrasLimpas.includes(descricaoLimpa);
+        });
 
         // --- CÁLCULO DE DATAS E NOMES ---
         const hoje = new Date();
@@ -102,18 +110,8 @@ export default function DashboardPage() {
 
         const prefixoMesAnterior = `${anoMesAnterior}-${String(mesAnterior + 1).padStart(2, "0")}`;
         const nomesMesesCompletos = [
-          "Janeiro",
-          "Fevereiro",
-          "Março",
-          "Abril",
-          "Maio",
-          "Junho",
-          "Julho",
-          "Agosto",
-          "Setembro",
-          "Outubro",
-          "Novembro",
-          "Dezembro",
+          "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+          "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
         ];
         const nomeDoMes = nomesMesesCompletos[mesAnterior];
 
@@ -122,40 +120,27 @@ export default function DashboardPage() {
           const isAprovada = String(d.status).toLowerCase() === "aprovada";
           const isDesteAno =
             String(d.numero).startsWith(String(anoAtual)) ||
-            String(d.criadoEm).startsWith(String(anoAtual));
+            (d.criadoEm && getAnoMesLocal(d.criadoEm).startsWith(String(anoAtual)));
           return isAprovada && isDesteAno;
         }).length;
 
+        // Faturamento do mês anterior (Mantemos isso apenas para o Card de Faturamento)
         const fatMesAnterior = faturamentos
-          .filter(
-            (f) =>
-              f.data_fat &&
-              String(f.data_fat).startsWith(prefixoMesAnterior) &&
-              !f.cancelada,
-          )
+          .filter((f) => f.data_fat && getAnoMesLocal(f.data_fat) === prefixoMesAnterior && !f.cancelada)
           .reduce((acc, f) => acc + Number(f.valor_fat || 0), 0);
 
-        const resMesAnterior = movimentos
-          .filter(
-            (m) => m.data && String(m.data).startsWith(prefixoMesAnterior),
-          )
+        // 👇 RESULTADO DO MÊS ANTERIOR (Apenas Movimentos)
+        // Soma TUDO (entradas e saídas) que aconteceu no mês, ignorando as regras ocultas
+        const resMesAnterior = movimentosValidos
+          .filter((m) => m.data && getAnoMesLocal(m.data) === prefixoMesAnterior)
           .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
 
         // --- CÁLCULO DOS GRÁFICOS (Últimos 12 meses) ---
         const ultimos12Meses = [];
         const nomesMesesCurtos = [
-          "Jan",
-          "Fev",
-          "Mar",
-          "Abr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Ago",
-          "Set",
-          "Out",
-          "Nov",
-          "Dez",
+          "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+          "Jul", "Ago", "Set", "Out", "Nov", "Dez",
         ];
 
         let somaFat12m = 0;
@@ -167,32 +152,28 @@ export default function DashboardPage() {
           const m = d.getMonth();
           const prefix = `${y}-${String(m + 1).padStart(2, "0")}`;
 
+          // Faturamento do Mês (Para a Linha Verde)
           const fatMes = faturamentos
-            .filter(
-              (f) =>
-                f.data_fat &&
-                String(f.data_fat).startsWith(prefix) &&
-                !f.cancelada,
-            )
+            .filter((f) => f.data_fat && getAnoMesLocal(f.data_fat) === prefix && !f.cancelada)
             .reduce((acc, f) => acc + Number(f.valor_fat || 0), 0);
 
-          const resMes = movimentos
-            .filter((mov) => mov.data && String(mov.data).startsWith(prefix))
+          // 👇 RESULTADO DO MÊS NO GRÁFICO (Apenas Movimentos)
+          const resultadoMesMovimento = movimentosValidos
+            .filter((mov) => mov.data && getAnoMesLocal(mov.data) === prefix)
             .reduce((acc, mov) => acc + Number(mov.valor || 0), 0);
 
           somaFat12m += fatMes;
-          somaRes12m += resMes;
+          somaRes12m += resultadoMesMovimento;
 
           ultimos12Meses.push({
             name: `${nomesMesesCurtos[m]}/${String(y).substring(2)}`,
-            faturamento: fatMes,
-            resultado: resMes,
+            faturamento: fatMes, // Linha de faturamento
+            resultado: resultadoMesMovimento, // Barra de resultado (Lucro/Prejuízo real do banco)
           });
         }
 
         setChartData(ultimos12Meses);
 
-        // Salvamos tudo de uma vez no estado
         setMetrics({
           demandasAprovadas,
           fatMesAnterior,
@@ -201,6 +182,7 @@ export default function DashboardPage() {
           totalFat12m: somaFat12m,
           totalRes12m: somaRes12m,
         });
+
       } catch (error) {
         console.error("Erro ao montar dashboard:", error);
       } finally {
@@ -209,7 +191,7 @@ export default function DashboardPage() {
     };
 
     carregarDashboard();
-  }, [user, role]);
+  }, [user?.id, role]);
 
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -234,15 +216,16 @@ export default function DashboardPage() {
     return null;
   };
 
-  if (loading)
+  if (loading) {
     return <CircularProgress sx={{ display: "block", m: "15% auto" }} />;
+  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4, pb: 5 }}>
       {/* CABEÇALHO */}
       <Box>
         <Title
-          title="Dashboard"
+          title="Visão Geral"
           subtitle={
             role === "consulta"
               ? `Visão Geral Financeira - Logado como Consulta`
@@ -293,209 +276,23 @@ export default function DashboardPage() {
           gap: 3,
         }}
       >
-        {/* GRÁFICO 1: FATURAMENTO (LINHA) */}
         {role !== "user" && (
-          <Paper
-            sx={{
-              flex: 1,
-              p: 3,
-              borderRadius: 2,
-              minHeight: 400,
-              boxShadow: "0 4px 12px 0 rgba(0,0,0,0.05)",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                mb: 3,
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Faturamento (Últimos 12 Meses)
-              </Typography>
-              {/* 👇 Legenda do acumulado no topo do gráfico */}
-              <Box
-                sx={{
-                  bgcolor: alpha(theme.palette.success.main, 0.1),
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 1,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 700, color: theme.palette.success.dark }}
-                >
-                  ACUMULADO: {formatarMoeda(metrics.totalFat12m)}
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(val) => `${val / 1000}k`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    name="Faturamento"
-                    type="monotone"
-                    dataKey="faturamento"
-                    stroke={theme.palette.success.main}
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        )}
-
-        {/* GRÁFICO 2: RESULTADO (BARRAS MULTICORES) */}
-        {role !== "user" && (
-          <Paper
-            sx={{
-              flex: 1,
-              p: 3,
-              borderRadius: 2,
-              minHeight: 400,
-              boxShadow: "0 4px 12px 0 rgba(0,0,0,0.05)",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                mb: 3,
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Resultado do Exercício (Últimos 12 Meses)
-              </Typography>
-              {/* 👇 Legenda do acumulado no topo do gráfico, muda de cor se for negativo */}
-              <Box
-                sx={{
-                  bgcolor:
-                    metrics.totalRes12m >= 0
-                      ? alpha(theme.palette.info.main, 0.1)
-                      : alpha(theme.palette.error.main, 0.1),
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 1,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 700,
-                    color:
-                      metrics.totalRes12m >= 0
-                        ? theme.palette.info.dark
-                        : theme.palette.error.dark,
-                  }}
-                >
-                  ACUMULADO: {formatarMoeda(metrics.totalRes12m)}
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(val) => `${val / 1000}k`}
-                  />
-                  <Tooltip
-                    content={<CustomTooltip />}
-                    cursor={{ fill: alpha(theme.palette.text.primary, 0.05) }}
-                  />
-                  <ReferenceLine y={0} stroke="#000" />
-                  <Bar
-                    name="Resultado"
-                    dataKey="resultado"
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {/* 👇 Mágica do Recharts: Mapeamos cada barra para decidir a cor dela */}
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.resultado >= 0
-                            ? theme.palette.info.main
-                            : theme.palette.error.main
-                        }
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
+          <>
+            <FaturamentoChart
+              data={chartData}
+              total={metrics.totalFat12m}
+              formatarMoeda={formatarMoeda}
+              CustomTooltip={CustomTooltip}
+            />
+            <ResultadoChart
+              data={chartData}
+              total={metrics.totalRes12m}
+              formatarMoeda={formatarMoeda}
+              CustomTooltip={CustomTooltip}
+            />
+          </>
         )}
       </Box>
     </Box>
-  );
-}
-
-// COMPONENTE DE CARD MODULARIZADO
-interface StatCardProps {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-}
-
-function StatCard({ title, value, icon, color }: StatCardProps) {
-  return (
-    <Card
-      sx={{
-        flex: "1 1 280px",
-        borderRadius: 2,
-        boxShadow: "0 4px 12px 0 rgba(0,0,0,0.05)",
-      }}
-    >
-      <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            p: 1.5,
-            borderRadius: 2,
-            bgcolor: alpha(color, 0.1),
-            color: color,
-          }}
-        >
-          {icon}
-        </Box>
-        <Box>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 600, textTransform: "uppercase" }}
-          >
-            {title}
-          </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            {value}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
   );
 }
