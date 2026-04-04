@@ -11,10 +11,12 @@ interface MovimentoCardProps {
 }
 
 export default function MovimentoCard({ mov, corBorda, tituloCard, dataFormatada, isConsulta, onClick }: MovimentoCardProps) {
+  console.log(corBorda)
   return (
     <Paper
       onClick={onClick}
       sx={{
+        bgcolor: corBorda === "#ffc107" ? "#ffc1071a" : "",
         display: "flex",
         flexDirection: { xs: "column", sm: "row" },
         borderLeft: `6px solid ${corBorda}`,

@@ -283,7 +283,7 @@ export default function MovimentoPage() {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: { xs: "flex-end", sm: "space-between" },
           alignItems: "center",
           flexWrap: "wrap",
           gap: 2,
@@ -304,8 +304,18 @@ export default function MovimentoPage() {
                 onClick={exportarParaExcel}
                 sx={{ borderRadius: 2 }}
               >
-                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Exportar Excel</Typography>
-                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>xls</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "none", sm: "block" } }}
+                >
+                  Exportar Excel
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "block", sm: "none" } }}
+                >
+                  xls
+                </Typography>
               </Button>
               <Button
                 variant="contained"
@@ -314,8 +324,18 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalRegrasOpen(true)}
               >
-                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Ocultar Registros</Typography>
-                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>Ocultar</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "none", sm: "block" } }}
+                >
+                  Ocultar Registros
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "block", sm: "none" } }}
+                >
+                  Ocultar
+                </Typography>
               </Button>
               <Button
                 variant="contained"
@@ -324,8 +344,18 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalOfxOpen(true)}
               >
-                <Typography variant="body2" sx={{display: {xs: "none", sm: "block"}}}>Importar OFX</Typography>
-                <Typography variant="body2" sx={{display: {xs: "block", sm: "none"}}}>OFX</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "none", sm: "block" } }}
+                >
+                  Importar OFX
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ display: { xs: "block", sm: "none" } }}
+                >
+                  OFX
+                </Typography>
               </Button>
             </>
           )}
