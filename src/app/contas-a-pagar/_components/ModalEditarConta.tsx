@@ -1,0 +1,82 @@
+// src/app/contas-a-pagar/_components/ModalEditarConta.tsx
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box, TextField, MenuItem, FormControlLabel, Checkbox, Divider, Chip, Typography, Button, CircularProgress } from "@mui/material";
+import { CheckCircle as CheckIcon } from "@mui/icons-material";
+import { IContaAPagar } from "@/types/conta";
+import { atualizarContaAPagar } from "@/services/contasService";
+
+const TIPOS = [{ sigla: "BLT", nome: "Boleto" }, { sigla: "PIX", nome: "Pix" }, { sigla: "CRD", nome: "Cartão de Crédito" }, { sigla: "TEF", nome: "Transf. Mesmo Banco" }, { sigla: "TED", nome: "Transf. Outro Banco" }];
+
+export function ModalEditarConta({ open, onClose, conta, onSuccess }: { open: boolean; onClose: () => void; conta: IContaAPagar | null; onSuccess: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [contaEditando, setContaEditando] = useState<IContaAPagar | null>(null);
+  const [novoArqBoleto, setNovoArqBoleto] = useState<File | null>(null);
+  const [novoArqNF, setNovoArqNF] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (conta) setContaEditando({ ...conta, valor: Number(conta.valor) });
+    setNovoArqBoleto(null); setNovoArqNF(null);
+  }, [conta]);
+
+  if (!contaEditando) return null;
+
+  const formatarMoeda = (val: any) => val ? Number(val).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+  const converterDecimal = (val: string) => { const dig = val.replace(/\D/g, ""); return dig ? (Number(dig) / 100).toFixed(2) : ""; };
+
+  const handleSave = async () => {
+    if (!contaEditando.fornecedor || !contaEditando.valor || !contaEditando.data_vencimento) return alert("Preencha os campos obrigatórios.");
+    try {
+      setSaving(true);
+      await atualizarContaAPagar(contaEditando, novoArqBoleto || undefined, novoArqNF || undefined);
+      onSuccess();
+      onClose();
+    } catch (error) { alert("Erro ao salvar."); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: "bold" }}>Editar Conta {contaEditando.parcela !== "Única" ? `(${contaEditando.parcela})` : ""}</DialogTitle>
+      <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <TextField label="Fornecedor / Descrição" fullWidth value={contaEditando.fornecedor} onChange={(e) => setContaEditando({...contaEditando, fornecedor: e.target.value})} required />
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField label="Demanda (Nº)" fullWidth value={contaEditando.demanda_numero || ""} onChange={(e) => setContaEditando({...contaEditando, demanda_numero: e.target.value})} />
+          <TextField select label="Tipo" fullWidth value={contaEditando.tipo} onChange={(e) => setContaEditando({...contaEditando, tipo: e.target.value})}>
+            {TIPOS.map(t => <MenuItem key={t.sigla} value={t.sigla}>{t.sigla} - {t.nome}</MenuItem>)}
+          </TextField>
+        </Box>
+        <FormControlLabel
+          control={<Checkbox checked={contaEditando.parcela === "Recorrente"} onChange={(e) => setContaEditando({...contaEditando, parcela: e.target.checked ? "Recorrente" : "Única"})} color="secondary" />}
+          label="Este é um pagamento Recorrente"
+        />
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField label="Valor (R$)" fullWidth required value={formatarMoeda(contaEditando.valor)} onChange={(e) => setContaEditando({...contaEditando, valor: Number(converterDecimal(e.target.value))})} />
+          <TextField type="date" label="Vencimento" fullWidth required InputLabelProps={{ shrink: true }} value={contaEditando.data_vencimento} onChange={(e) => setContaEditando({...contaEditando, data_vencimento: e.target.value})} />
+        </Box>
+
+        <Divider sx={{ my: 1 }}><Chip label="Gerenciar Anexos" /></Divider>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, border: "1px dashed #ccc", borderRadius: 1, bgcolor: contaEditando.arquivo_boleto ? "#f0f8ff" : "transparent" }}>
+            <Typography variant="body2">{contaEditando.arquivo_boleto ? "✅ Boleto Existente" : "❌ Sem Boleto"}</Typography>
+            <Button variant={contaEditando.arquivo_boleto ? "outlined" : "contained"} component="label" size="small">
+              {novoArqBoleto ? novoArqBoleto.name : "Substituir / Enviar"}
+              <input type="file" hidden accept="application/pdf" onChange={(e) => setNovoArqBoleto(e.target.files?.[0] || null)} />
+            </Button>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, border: "1px dashed #ccc", borderRadius: 1, bgcolor: contaEditando.arquivo_nf ? "#fff0f5" : "transparent" }}>
+            <Typography variant="body2">{contaEditando.arquivo_nf ? "✅ Nota Fiscal Existente" : "❌ Sem Nota Fiscal"}</Typography>
+            <Button color="secondary" variant={contaEditando.arquivo_nf ? "outlined" : "contained"} component="label" size="small">
+              {novoArqNF ? novoArqNF.name : "Substituir / Enviar"}
+              <input type="file" hidden accept="application/pdf" onChange={(e) => setNovoArqNF(e.target.files?.[0] || null)} />
+            </Button>
+          </Box>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ p: 3 }}>
+        <Button onClick={onClose} color="inherit" disabled={saving}>Cancelar</Button>
+        <Button onClick={handleSave} variant="contained" color="primary" disabled={saving} startIcon={saving ? <CircularProgress size={20} /> : <CheckIcon />}>
+          {saving ? "Salvando..." : "Salvar Alterações"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

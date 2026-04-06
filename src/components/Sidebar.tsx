@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ReceiptIcon from "@mui/icons-material/Receipt";
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import Image from "next/image";
 
 export default function Sidebar() {
@@ -216,6 +217,28 @@ export default function Sidebar() {
               </ListItemIcon>
               {!isCollapsed && <ListItemText primary="Movimento" />}
             </ListItemButton>
+
+            {/*--- Menu Contas a Pagar ---*/}
+            {/* <ListItemButton
+              onClick={() => handleNavigation("/contas-a-pagar")}
+              selected={pathname === "/contas-a-pagar"}
+              sx={{
+                borderRadius: 2,
+                justifyContent: isCollapsed ? "center" : "flex-start",
+                px: isCollapsed ? 1 : 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isCollapsed ? 0 : 2,
+                  justifyContent: "center",
+                }}
+              >
+                <MonetizationOnIcon />
+              </ListItemIcon>
+              {!isCollapsed && <ListItemText primary="Contas a Pagar" />}
+            </ListItemButton> */}
           </>
         ) : null}
       </List>
