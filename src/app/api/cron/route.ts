@@ -3,23 +3,27 @@ import { supabase } from '@/lib/supabase'; // Verifique se o caminho do seu clie
 
 export async function GET() {
   try {
-    // 1. Pegar a data de hoje (YYYY-MM-DD)
-    const hoje = new Date().toISOString().split('T')[0];
+    // 1. Pegar a data de hoje formatada exatamente como o banco espera (YYYY-MM-DD)
+    // Usando 'en-CA' (Canadá) porque o formato padrão deles é YYYY-MM-DD, igual ao SQL.
+    const hoje = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York', // Mesmo fuso da Flórida
+    }).format(new Date());
 
-    // 2. Buscar no Supabase pagamentos que vencem hoje
-    // Ajuste 'contas_a_pagar' e 'data_vencimento' para os nomes reais da sua tabela/coluna
+    console.log(`Buscando pagamentos para a data: ${hoje}`);
+
+    // 2. Buscar no Supabase
     const { data, error } = await supabase
       .from('contas_a_pagar') 
       .select('*')
-      .eq('data_vencimento', hoje)
-      .eq('status', 'pendente'); // Apenas os que não foram pagos
+      .eq('data_vencimento', hoje); // Removi o filtro de status temporariamente para teste
 
     if (error) throw error;
 
-    console.log(`Cron executado. Encontrados ${data?.length || 0} pagamentos para hoje.`);
+    console.log(`Cron executado. Encontrados ${data?.length || 0} pagamentos.`);
 
     return NextResponse.json({ 
       success: true, 
+      data_consultada: hoje,
       count: data?.length || 0,
       items: data 
     });
