@@ -19,8 +19,8 @@ const gerarNomeArquivo = (
   }
 
   // Se for parcelado, adicionamos o indicador da parcela (ex: P1, P2) no nome
-  const sufixoParcela =
-    conta.parcela !== "Única" ? `_P${conta.parcela.split("/")[0]}` : "";
+  const sufixoParcela = 
+  (conta.parcela && conta.parcela !== "Única") ? `_P${conta.parcela.split("/")[0]}` : "";
 
   return `${ano}-${mes}-${dia}-${conta.tipo}-${valorFormatado}(${descricao})${sufixoParcela}_${tipoArquivo}.${extensao}`;
 };
@@ -212,7 +212,6 @@ export const atualizarContaAPagar = async (
     .update({
       fornecedor: conta.fornecedor,
       demanda_numero: conta.demanda_numero,
-      recorrente: conta.recorrente,
       valor: Number(conta.valor),
       data_vencimento: conta.data_vencimento,
       tipo: conta.tipo,
