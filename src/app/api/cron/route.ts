@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { Resend } from 'resend'; // Assumindo que você usa Resend, ou ajuste para o seu serviço
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import nodemailer from 'nodemailer';
 
 export async function GET() {
   try {
-    const hoje = new Intl.DateTimeFormat('en-CA', {
+    const hoje: string = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/New_York',
     }).format(new Date());
 
@@ -16,7 +14,7 @@ export async function GET() {
       .from('contas_a_pagar')
       .select('*')
       .eq('data_vencimento', hoje)
-      .eq('status', 'pendente'); // Só avisa o que ainda não foi pago
+      .eq('status', 'pendente');
 
     if (error) throw error;
 
@@ -24,29 +22,34 @@ export async function GET() {
       return NextResponse.json({ message: "Nenhum pagamento pendente para hoje." });
     }
 
-    // Montando o texto do e-mail com os pagamentos encontrados
+    // Configurando o Nodemailer (usando as variáveis que você já tem)
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com", // Ou o seu provedor
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
     const listaPagamentos = pagamentos.map(p => 
       `- ${p.descricao}: R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     ).join('\n');
 
-    // Enviando o e-mail
-    await resend.emails.send({
-      from: 'Sistema <onboarding@resend.dev>', // Ou seu domínio verificado
-      to: 'seu-email@dominio.com', // COLOQUE SEU EMAIL AQUI
+    await transporter.sendMail({
+      from: `"Sistema LL" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER, // Enviando para você mesmo
       subject: `🔔 Alerta de Vencimento - ${hoje}`,
       text: `Olá! Os seguintes pagamentos vencem hoje:\n\n${listaPagamentos}\n\nVerifique o sistema para mais detalhes.`,
     });
 
-    console.log(`E-mail enviado para ${pagamentos.length} pagamentos.`);
+    console.log(`E-mail enviado via Nodemailer para ${pagamentos.length} pagamentos.`);
 
-    return NextResponse.json({ 
-      success: true, 
-      sent: true,
-      count: pagamentos.length 
-    });
+    return NextResponse.json({ success: true, sent: true });
 
   } catch (err: any) {
-    console.error("Erro no Cron/Email:", err.message);
+    console.error("Erro no Cron/Nodemailer:", err.message);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
