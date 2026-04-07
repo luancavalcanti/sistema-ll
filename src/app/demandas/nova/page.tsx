@@ -10,6 +10,7 @@ import Title from '@/components/Title';
 // 👇 Importando o nosso serviço
 import { obterProximoNumeroDemanda, criarDemanda } from '@/services/demandasService';
 
+export const dynamic = "force-dynamic";
 // Tipos para a API do IBGE
 interface IBGEUF { sigla: string; nome: string; }
 interface IBGECidade { nome: string; }
