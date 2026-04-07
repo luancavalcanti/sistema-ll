@@ -14,7 +14,7 @@ export async function GET() {
       .from('contas_a_pagar')
       .select('*')
       .eq('data_vencimento', hoje)
-      .eq('status', 'pendente');
+      .eq('status', 'Pendente');
 
     if (error) throw error;
 
