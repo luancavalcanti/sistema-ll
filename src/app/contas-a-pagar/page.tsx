@@ -47,7 +47,7 @@ export default function ContasAPagarPage() {
   useEffect(() => {
     if (authLoading || !user) return;
     carregarContas();
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]);
 
   // GERAÇÃO DA LISTA DE ANOS
   const listaAnos = useMemo(() => {

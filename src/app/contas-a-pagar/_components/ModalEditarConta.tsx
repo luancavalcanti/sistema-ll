@@ -28,25 +28,14 @@ export function ModalEditarConta({ open, onClose, conta, onSuccess }: { open: bo
   // Função para enviar e-mail de atualização
   const enviarEmailAtualizacao = async (dados: IContaAPagar) => {
     try {
-      await fetch('/api/send-email', {
+      await fetch('/api/pagamentos/editar', { // Rota nova aqui
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: process.env.NEXT_PUBLIC_EMAIL_USER, // ou seu email fixo
-          subject: `🔄 Pagamento Alterado: ${dados.fornecedor}`,
-          html: `
-            <h3>Dados do Pagamento Atualizados</h3>
-            <p>O pagamento foi editado no sistema. Seguem os novos dados:</p>
-            <ul>
-              <li><strong>Fornecedor:</strong> ${dados.fornecedor}</li>
-              <li><strong>Novo Valor:</strong> R$ ${formatarMoeda(dados.valor)}</li>
-              <li><strong>Vencimento:</strong> ${dados.data_vencimento}</li>
-              <li><strong>Tipo:</strong> ${dados.tipo}</li>
-            </ul>
-          `
-        })
+        body: JSON.stringify({ dados }) // Enviamos o objeto dados
       });
-    } catch (e) { console.error("Erro ao enviar email de log", e); }
+    } catch (e) { 
+      console.error("Erro ao disparar API de email", e); 
+    }
   };
 
   const handleSave = async () => {
