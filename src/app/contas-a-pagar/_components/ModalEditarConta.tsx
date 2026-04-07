@@ -1,14 +1,16 @@
 // src/app/contas-a-pagar/_components/ModalEditarConta.tsx
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Box, TextField, MenuItem, FormControlLabel, Checkbox, Divider, Chip, Typography, Button, CircularProgress } from "@mui/material";
-import { CheckCircle as CheckIcon } from "@mui/icons-material";
+import { CheckCircle as CheckIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { IContaAPagar } from "@/types/conta";
-import { atualizarContaAPagar } from "@/services/contasService";
+// Importe a função de excluir aqui
+import { atualizarContaAPagar, excluirContaAPagar } from "@/services/contasService";
 
 const TIPOS = [{ sigla: "BLT", nome: "Boleto" }, { sigla: "PIX", nome: "Pix" }, { sigla: "CRD", nome: "Cartão de Crédito" }, { sigla: "TEF", nome: "Transf. Mesmo Banco" }, { sigla: "TED", nome: "Transf. Outro Banco" }];
 
 export function ModalEditarConta({ open, onClose, conta, onSuccess }: { open: boolean; onClose: () => void; conta: IContaAPagar | null; onSuccess: () => void }) {
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [contaEditando, setContaEditando] = useState<IContaAPagar | null>(null);
   const [novoArqBoleto, setNovoArqBoleto] = useState<File | null>(null);
   const [novoArqNF, setNovoArqNF] = useState<File | null>(null);
@@ -23,18 +25,56 @@ export function ModalEditarConta({ open, onClose, conta, onSuccess }: { open: bo
   const formatarMoeda = (val: any) => val ? Number(val).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
   const converterDecimal = (val: string) => { const dig = val.replace(/\D/g, ""); return dig ? (Number(dig) / 100).toFixed(2) : ""; };
 
+  // Função para enviar e-mail de atualização
+  const enviarEmailAtualizacao = async (dados: IContaAPagar) => {
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: process.env.NEXT_PUBLIC_EMAIL_USER, // ou seu email fixo
+          subject: `🔄 Pagamento Alterado: ${dados.fornecedor}`,
+          html: `
+            <h3>Dados do Pagamento Atualizados</h3>
+            <p>O pagamento foi editado no sistema. Seguem os novos dados:</p>
+            <ul>
+              <li><strong>Fornecedor:</strong> ${dados.fornecedor}</li>
+              <li><strong>Novo Valor:</strong> R$ ${formatarMoeda(dados.valor)}</li>
+              <li><strong>Vencimento:</strong> ${dados.data_vencimento}</li>
+              <li><strong>Tipo:</strong> ${dados.tipo}</li>
+            </ul>
+          `
+        })
+      });
+    } catch (e) { console.error("Erro ao enviar email de log", e); }
+  };
+
   const handleSave = async () => {
     if (!contaEditando.fornecedor || !contaEditando.valor || !contaEditando.data_vencimento) return alert("Preencha os campos obrigatórios.");
     try {
       setSaving(true);
       await atualizarContaAPagar(contaEditando, novoArqBoleto || undefined, novoArqNF || undefined);
+      
+      // Dispara o e-mail logo após salvar
+      await enviarEmailAtualizacao(contaEditando);
+      
       onSuccess();
       onClose();
     } catch (error) { alert("Erro ao salvar."); } finally { setSaving(false); }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Tem certeza que deseja remover este pagamento?")) return;
+    try {
+      setDeleting(true);
+      await excluirContaAPagar(contaEditando.id!);
+      onSuccess();
+      onClose();
+    } catch (error) { alert("Erro ao excluir."); } finally { setDeleting(false); }
+  };
+
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={() => !saving && !deleting && onClose()} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: "bold" }}>Editar Conta {contaEditando.parcela !== "Única" ? `(${contaEditando.parcela})` : ""}</DialogTitle>
       <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <TextField label="Fornecedor / Descrição" fullWidth value={contaEditando.fornecedor} onChange={(e) => setContaEditando({...contaEditando, fornecedor: e.target.value})} required />
@@ -71,11 +111,29 @@ export function ModalEditarConta({ open, onClose, conta, onSuccess }: { open: bo
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} color="inherit" disabled={saving}>Cancelar</Button>
-        <Button onClick={handleSave} variant="contained" color="primary" disabled={saving} startIcon={saving ? <CircularProgress size={20} /> : <CheckIcon />}>
-          {saving ? "Salvando..." : "Salvar Alterações"}
+      <DialogActions sx={{ p: 3, justifyContent: "space-between" }}>
+        {/* BOTÃO REMOVER (LADO ESQUERDO) */}
+        <Button 
+          onClick={handleDelete} 
+          color="error" 
+          disabled={saving || deleting} 
+          startIcon={deleting ? <CircularProgress size={20} color="error" /> : <DeleteIcon />}
+        >
+          {deleting ? "Removendo..." : "Remover"}
         </Button>
+
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button onClick={onClose} color="inherit" disabled={saving || deleting}>Cancelar</Button>
+          <Button 
+            onClick={handleSave} 
+            variant="contained" 
+            color="primary" 
+            disabled={saving || deleting} 
+            startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <CheckIcon />}
+          >
+            {saving ? "Salvando..." : "Salvar Alterações"}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );
