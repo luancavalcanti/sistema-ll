@@ -225,3 +225,18 @@ export const atualizarContaAPagar = async (
     throw new Error(error.message);
   }
 };
+
+
+export async function excluirContaAPagar(id: string | number) {
+  const { error } = await supabase
+    .from('contas_a_pagar')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error("Erro ao excluir conta:", error.message);
+    throw new Error("Não foi possível excluir a conta.");
+  }
+
+  return true;
+}
