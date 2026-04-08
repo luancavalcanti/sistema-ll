@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     await transporter.sendMail({
       from: `"Sistema Financeiro" <${process.env.EMAIL_USER}>`,
-      to: 'luan.cavalcanti@llengenharia.com.br',
+      to: 'financeiro@llengenharia.com.br',
       subject: `✅ Registro de Pagamento: ${dados.fornecedor}`,
       html: `
         <div style="font-family: sans-serif; border: 1px solid #eee; padding: 20px; border-radius: 8px;">

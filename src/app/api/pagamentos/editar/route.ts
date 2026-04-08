@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     await transporter.sendMail({
       from: `"Sistema LL" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
+      to: "financeiro@llengenharia.com.br",
       subject: `🔔 Alteração: ${dados.fornecedor}`,
       html: htmlEmail,
     });

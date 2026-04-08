@@ -102,7 +102,7 @@ export async function GET() {
 
     await transporter.sendMail({
       from: `"Gestão LL" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
+      to: "financeiro@llengenharia.com.br",
       subject: `📊 Resumo de Pagamentos: ${hoje}`,
       html: htmlEmail,
     });
