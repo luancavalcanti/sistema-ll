@@ -94,20 +94,6 @@ export const criarContaAPagar = async (
 
   if (error) throw new Error(error.message);
 
-  //Enviar e-mail de notificação para o financeiro (opcional, mas recomendado)
-  if (data && data[0]) {
-    try {
-      // Dispara o e-mail sem travar a interface do usuário (não usamos await aqui se não quiser esperar o e-mail ir)
-      fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conta: data[0] }),
-      });
-    } catch (err) {
-      console.error("Erro ao solicitar envio de e-mail:", err);
-    }
-  }
-
   return data[0];
 };
 
