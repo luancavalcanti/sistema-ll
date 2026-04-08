@@ -155,7 +155,10 @@ export function ContaCard({ conta, abaAtual, onEdit, onBaixa }: Props) {
             <Tooltip title="Ver Boleto">
               <IconButton
                 color="primary"
-                onClick={() => abrirAnexo(conta.arquivo_boleto as string)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  abrirAnexo(conta.arquivo_boleto as string)
+                }}
               >
                 <PdfIcon />
               </IconButton>
@@ -165,7 +168,10 @@ export function ContaCard({ conta, abaAtual, onEdit, onBaixa }: Props) {
             <Tooltip title="Ver Nota Fiscal">
               <IconButton
                 color="secondary"
-                onClick={() => abrirAnexo(conta.arquivo_nf as string)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  abrirAnexo(conta.arquivo_nf as string)
+                }}
               >
                 <PdfIcon />
               </IconButton>
