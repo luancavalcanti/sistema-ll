@@ -16,14 +16,16 @@ import { IMovimento, Classificacao } from '@/types/movimento';
 import { obterMovimentoPorId, atualizarMovimento } from '@/services/movimentosService';
 import { supabase } from '@/lib/supabase';
 
-const TIPOS_DESPESA: Classificacao[] = ['Fixa', 'Obra', 'Tributo', 'Empréstimo', 'Outra'];
+const TIPOS_DESPESA = ['Fixa', 'Obra', 'Tributo', 'Empréstimo', 'Outra'];
+const TIPOS_ENTRADA = ['Crédito Cliente', 'Empréstimo', 'Aporte sócio', 'Estorno Obra', 'Estorno outros', 'Rendimento', 'Outros'];
 
 export default function EditarMovimentoPage() {
   const router = useRouter();
   const params = useParams();
   const movimentoId = params.id as string;
 
-  const [movimento, setMovimento] = useState<Partial<IMovimento>>({});
+  // Utilizamos "any" ou estendemos Partial<IMovimento> aqui caso 'nota_fiscal' ainda não exista no type original
+  const [movimento, setMovimento] = useState<Partial<IMovimento> & { nota_fiscal?: string }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -59,9 +61,16 @@ export default function EditarMovimentoPage() {
     setMovimento(prev => {
       const updated = { ...prev, [name]: value };
       
-      // Regra de negócio: Se mudar a classificação e NÃO for 'Obra', limpa o número da demanda
-      if (name === 'classificacao' && value !== 'Obra') {
-        updated.demanda = '';
+      // Regras de negócio ao alterar a Classificação:
+      if (name === 'classificacao') {
+        // Se NÃO for 'Obra' nem 'Estorno Obra', limpa o número da demanda
+        if (value !== 'Obra' && value !== 'Estorno Obra') {
+          updated.demanda = '';
+        }
+        // Se NÃO for 'Crédito Cliente', limpa a nota fiscal
+        if (value !== 'Crédito Cliente') {
+          updated.nota_fiscal = '';
+        }
       }
       
       return updated;
@@ -92,7 +101,6 @@ export default function EditarMovimentoPage() {
         .insert([{ texto: movimento.descricao }]);
 
       if (error) {
-        // Código 23505 é o erro padrão do PostgreSQL para "Duplicidade de Chave Única"
         if (error.code === '23505') {
           setSnackbar({ open: true, msg: "Esta descrição já está na sua lista de regras!", severity: "warning" });
         } else {
@@ -114,10 +122,13 @@ export default function EditarMovimentoPage() {
   }
 
   // Formatação para exibição
-  const isObra = movimento.classificacao === 'Obra';
   const dataExibicao = movimento.data ? movimento.data.split('-').reverse().join('/') : '';
   const valorExibicao = Number(movimento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  
+  // Lógicas condicionais de exibição
   const isDespesa = Number(movimento.valor) < 0;
+  const isObraOuEstorno = movimento.classificacao === 'Obra' || movimento.classificacao === 'Estorno Obra';
+  const isCreditoCliente = movimento.classificacao === 'Crédito Cliente';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800, mx: 'auto', pb: 5 }}>
@@ -169,7 +180,6 @@ export default function EditarMovimentoPage() {
 
         <Divider sx={{ my: 1 }} />
         
-        {/* 👇 Nova estrutura da Descrição com o botão ao lado */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">Descrição Original</Typography>
@@ -199,7 +209,7 @@ export default function EditarMovimentoPage() {
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
           <TextField
             sx={{ flex: 2 }}
-            label="Favorecido"
+            label={isDespesa ? "Favorecido" : "Origem / Cliente"}
             name="favorecido"
             value={movimento.favorecido || ''}
             onChange={handleChange}
@@ -209,20 +219,20 @@ export default function EditarMovimentoPage() {
           <TextField
             sx={{ flex: 1, minWidth: '200px' }}
             select
-            label="Tipo de Despesa"
+            label={isDespesa ? "Tipo de Despesa" : "Tipo da Entrada"}
             name="classificacao"
             value={movimento.classificacao || ''}
             onChange={handleChange}
           >
             <MenuItem value=""><em>Nenhum</em></MenuItem>
-            {TIPOS_DESPESA.map((tipo) => (
+            {(isDespesa ? TIPOS_DESPESA : TIPOS_ENTRADA).map((tipo) => (
               <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
             ))}
           </TextField>
         </Box>
 
-        {/* Mostra o campo de Demanda APENAS se o tipo for Obra */}
-        {isObra && (
+        {/* Mostra o campo de Demanda APENAS se o tipo for Obra ou Estorno Obra */}
+        {isObraOuEstorno && (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               sx={{ width: { xs: '100%', sm: '50%' } }}
@@ -231,7 +241,22 @@ export default function EditarMovimentoPage() {
               value={movimento.demanda || ''}
               onChange={handleChange}
               placeholder="Ex: 2026001"
-              helperText="Vincule esta despesa a uma demanda específica"
+              helperText="Vincule a uma demanda específica"
+            />
+          </Box>
+        )}
+
+        {/* Mostra o campo de Nota Fiscal APENAS se o tipo for Crédito Cliente */}
+        {isCreditoCliente && (
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              sx={{ width: { xs: '100%', sm: '50%' } }}
+              label="Número da Nota Fiscal"
+              name="nota_fiscal" 
+              value={movimento.nota_fiscal || ''}
+              onChange={handleChange}
+              placeholder="Ex: 2600000000028"
+              helperText="Informe os 13 dígitos numéricos da NF"
             />
           </Box>
         )}

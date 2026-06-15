@@ -143,16 +143,16 @@ export function ModalCriarConta({
         );
 
         // 2. Dispara o e-mail avisando que o registro foi criado
-        try {
-          await fetch("/api/pagamentos/novo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(contaFinal),
-          });
-        } catch (emailErr) {
-          console.error("Falha ao enviar o e-mail de notificação:", emailErr);
-          // Não damos throw aqui para não interromper o salvamento das próximas parcelas
-        }
+        // try {
+        //   await fetch("/api/pagamentos/novo", {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify(contaFinal),
+        //   });
+        // } catch (emailErr) {
+        //   console.error("Falha ao enviar o e-mail de notificação:", emailErr);
+        //   // Não damos throw aqui para não interromper o salvamento das próximas parcelas
+        // }
       }
 
       // Limpa o formulário e fecha

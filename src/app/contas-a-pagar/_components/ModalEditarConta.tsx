@@ -102,7 +102,7 @@ export function ModalEditarConta({
       );
 
       // Dispara o e-mail logo após salvar
-      await enviarEmailAtualizacao(contaEditando);
+      // await enviarEmailAtualizacao(contaEditando);
 
       onSuccess();
       onClose();
