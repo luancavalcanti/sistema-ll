@@ -12,5 +12,6 @@ export interface IMovimento {
   classificacao?: Classificacao;
   observacao?: string;
   demanda?: string; // Só usado se tipoDespesa === 'Obra'
+  nota_fiscal?: string;
 }
 
