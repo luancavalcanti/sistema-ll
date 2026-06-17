@@ -295,28 +295,28 @@ export default function MovimentoPage() {
         />
 
         <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={<DownloadIcon />}
+            onClick={exportarParaExcel}
+            sx={{ borderRadius: 2 }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
+              Exportar Excel
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ display: { xs: "block", sm: "none" } }}
+            >
+              xls
+            </Typography>
+          </Button>
           {!isConsulta && (
             <>
-              <Button
-                variant="outlined"
-                color="success"
-                startIcon={<DownloadIcon />}
-                onClick={exportarParaExcel}
-                sx={{ borderRadius: 2 }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
-                  Exportar Excel
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "block", sm: "none" } }}
-                >
-                  xls
-                </Typography>
-              </Button>
               <Button
                 variant="contained"
                 color="secondary"
