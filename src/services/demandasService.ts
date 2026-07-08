@@ -46,16 +46,20 @@ export const buscarDemandaPorNumero = async (numero: string): Promise<IDemanda |
   return data as IDemanda;
 };
 
-// 3. ATUALIZAR (Agora usando o NÚMERO em vez do ID longo)
+// 3. ATUALIZAR (Agora atualizando também o número se houver alteração)
 export const atualizarDemanda = async (
-  numero: string, // 👈 Mudou de 'id' para 'numero'
+  numeroAtual: string, // 👈 Renomeei para ficar mais claro que este é o número da URL
   demandaData: Partial<IDemanda>, 
   faturamentos: IFaturamento[]
 ) => {
-  // 1. Atualiza apenas a Demanda
+  // Descobre qual é o número final (o novo que veio da tela, ou mantém o atual)
+  const numeroFinal = demandaData.numero ? String(demandaData.numero) : numeroAtual;
+
+  // 1. Atualiza a Demanda
   const { error: errorDemanda } = await supabase
     .from('demandas')
     .update({
+      numero: numeroFinal, // 👈 AQUI ESTAVA FALTANDO! Agora salva o novo número no banco
       cliente: demandaData.cliente, 
       gestor: demandaData.gestor, 
       local: demandaData.local,
@@ -67,13 +71,16 @@ export const atualizarDemanda = async (
       apoio: Number(demandaData.apoio) || 0, 
       gestao: Number(demandaData.gestao) || 0,
     })
-    .eq('numero', numero); // 👈 Atualizando pela coluna 'numero'
+    .eq('numero', numeroAtual); // 👈 Busca pelo antigo para conseguir alterar
 
-  if (errorDemanda) throw new Error(errorDemanda.message);
+  if (errorDemanda) {
+    console.error("Erro no update da demanda:", errorDemanda);
+    throw new Error(errorDemanda.message);
+  }
 
-  // 2. Chama o serviço focado em faturamento
-  if (numero) {
-    await sincronizarFaturamentoDaDemanda(numero, faturamentos);
+  // 2. Chama o serviço focado em faturamento passando o NÚMERO NOVO
+  if (numeroFinal) {
+    await sincronizarFaturamentoDaDemanda(numeroFinal, faturamentos);
   }
 };
 

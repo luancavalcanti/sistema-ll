@@ -11,6 +11,7 @@ import Title from "@/components/Title";
 import { useAuth } from "@/contexts/AuthContext";
 import { IDemanda, STATUS_CONFIG } from "@/types/demanda";
 import { DemandaCardList } from "./_components/DemandaCardList";
+import { supabase } from "@/lib/supabase";
 
 import { buscarDemandas } from "@/services/demandasService";
 
@@ -23,8 +24,8 @@ export default function DemandasPage() {
   // Estados dos Filtros
   const [anoFiltro, setAnoFiltro] = useState<string>("2026");
   const [statusFiltro, setStatusFiltro] = useState<string>("Todos");
-  // 👇 1. Novo Estado para o campo de busca
   const [busca, setBusca] = useState<string>("");
+  const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState<string>("");
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -32,6 +33,23 @@ export default function DemandasPage() {
     const iniciar = async () => {
       try {
         setLoading(true);
+
+        // 👇 Nova Etapa: Buscar o nome na tabela 'users' caso não seja Admin
+        if (!isAdmin) {
+          const { data: userData, error: userError } = await supabase
+            .from('users') // Nome da sua tabela
+            .select('nome')
+            .eq('id', user.id) // Assumindo que a coluna de relação com a auth seja 'id'
+            .single();
+
+          if (userData && !userError) {
+            setNomeUsuarioLogado(userData.nome);
+          } else {
+            console.error("Erro ao buscar nome do usuário:", userError);
+          }
+        }
+
+        // Busca as demandas (já estava aqui)
         const dadosProntos = await buscarDemandas(user, isAdmin);
         setDemandas(dadosProntos);
       } catch (error) {
@@ -44,34 +62,45 @@ export default function DemandasPage() {
     iniciar();
   }, [user?.id, isAdmin, authLoading]);
 
-  // 👇 Função auxiliar para ignorar acentos e maiúsculas na busca
+  // Função auxiliar para ignorar acentos e maiúsculas na busca
   const normalizarTexto = (texto?: string) => {
     if (!texto) return "";
     return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   };
 
-  // 👇 2. Lógica de Filtro em Memória (Atualizada com a Busca)
+  // 👇 Restrição de visualização baseada no Role/Gestor
+  const demandasVisiveis = useMemo(() => {
+    if (isAdmin) return demandas; // Admin enxerga tudo absoluto
+
+    // Usa o estado que preenchemos na consulta ao banco
+    const nomeNormalizado = normalizarTexto(nomeUsuarioLogado);
+
+    return demandas.filter((d) => {
+      // Se o estado ainda estiver vazio (carregando), não mostra nada por segurança
+      if (!nomeNormalizado) return false; 
+      
+      return normalizarTexto(d.gestor) === nomeNormalizado;
+    });
+  }, [demandas, isAdmin, nomeUsuarioLogado]);
+
+  // 👇 2. Filtro de Tela (Ano + Status + Busca) alimentado pelas demandas permitidas
   const demandasFiltradas = useMemo(() => {
     const termoBusca = normalizarTexto(busca);
 
-    return demandas.filter((d) => {
+    return demandasVisiveis.filter((d) => {
       const matchAno = anoFiltro === "Todas" || d.numero.toString().startsWith(anoFiltro);
       const matchStatus = statusFiltro === "Todos" || d.status === statusFiltro;
       
-      // Lógica da Busca em Tempo Real
       let matchBusca = true;
       if (termoBusca) {
-        // Verifica se o termo está no número ou no nome do local
         const stringNumero = d.numero.toString();
         const textoLocal = normalizarTexto(d.local);
-        
         matchBusca = stringNumero.includes(termoBusca) || textoLocal.includes(termoBusca);
       }
 
-      // Só exibe a demanda se ela passar nos três filtros (Ano + Status + Busca)
       return matchAno && matchStatus && matchBusca;
     });
-  }, [demandas, anoFiltro, statusFiltro, busca]);
+  }, [demandasVisiveis, anoFiltro, statusFiltro, busca]);
 
   if (loading || authLoading) {
     return (
@@ -81,11 +110,11 @@ export default function DemandasPage() {
     );
   }
 
-  // Lista de anos com base nas demandas registradas.
-  const listaAnos = demandas.map((demanda) => demanda.numero.toString().slice(0, 4));
+  // 👇 3. Atualizado para extrair os anos apenas das demandas visíveis
+  const listaAnos = demandasVisiveis.map((demanda) => demanda.numero.toString().slice(0, 4));
 
-  // Quantidade de demandas por status/ano
-  const contagemStatusPorAno = demandas
+  // 👇 4. Atualizado para contar os status apenas das demandas visíveis
+  const contagemStatusPorAno = demandasVisiveis
     .filter((demanda) => demanda.numero.toString().slice(0, 4) === anoFiltro)
     .map((demanda) => demanda.status)
     .reduce((acc: Record<string, number>, item) => {
@@ -108,7 +137,7 @@ export default function DemandasPage() {
         </Button>
       </Box>
 
-      {/* 👇 3. NOVO CAMPO DE BUSCA */}
+      {/* CAMPO DE BUSCA */}
       <TextField
         fullWidth
         placeholder="Buscar por número ou nome do local..."
@@ -139,7 +168,7 @@ export default function DemandasPage() {
         ))}
       </Box>
 
-      {/* 📱 FILTRO DE STATUS - VERSÃO CELULAR (Dropdown) */}
+      {/* FILTRO DE STATUS - CELULAR */}
       <Box sx={{ display: { xs: "block", md: "none" }, mb: 1 }}>
         <TextField
           select
@@ -169,7 +198,7 @@ export default function DemandasPage() {
         </TextField>
       </Box>
 
-      {/* 💻 FILTRO DE STATUS - VERSÃO PC/TABLET (Chips) */}
+      {/* FILTRO DE STATUS - PC */}
       <Box 
         sx={{ 
           display: { xs: "none", md: "flex" }, gap: 1, flexWrap: "wrap", pb: 3, 
@@ -203,7 +232,7 @@ export default function DemandasPage() {
         })}
       </Box>
 
-      {/* LISTAGEM DE CARDS */}
+      {/* LISTAGEM */}
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {demandasFiltradas.length === 0 ? (
           <Paper sx={{ p: 10, textAlign: "center", bgcolor: "transparent", border: "2px dashed #ddd" }}>
