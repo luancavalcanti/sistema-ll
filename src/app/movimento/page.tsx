@@ -10,6 +10,7 @@ import {
   TextField,
   MenuItem,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import {
   FilterList as FilterIcon,
@@ -23,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { IMovimento } from "@/types/movimento";
 
-// 👇 Novos imports do serviço limpo
+// Imports do serviço
 import {
   buscarTodosMovimentos,
   buscarRegrasOcultacao,
@@ -35,7 +36,6 @@ import RegrasOcultacaoModal from "./_components/RegrasOcultacaoModal";
 import Title from "@/components/Title";
 import ResumoFinanceiro from "./_components/ResumoFinanceiro";
 import MovimentoCard from "./_components/MovimentoCard";
-import { NodeNextRequest } from "next/dist/server/base-http/node";
 
 const MESES = [
   { valor: "01", nome: "Janeiro" },
@@ -58,8 +58,6 @@ export default function MovimentoPage() {
 
   const [movimentos, setMovimentos] = useState<IMovimento[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // 👇 Gatilho para recarregar a lista quando o modal de OFX fechar
   const [triggerRefresh, setTriggerRefresh] = useState(0);
 
   // Estados para modais
@@ -71,7 +69,7 @@ export default function MovimentoPage() {
   const dataAtual = new Date();
   const [ano, setAno] = useState<string>(dataAtual.getFullYear().toString());
   const [mes, setMes] = useState<string>(
-    String(dataAtual.getMonth() + 1).padStart(2, "0"),
+    String(dataAtual.getMonth() + 1).padStart(2, "0")
   );
 
   // Filtros Ocultáveis
@@ -122,10 +120,12 @@ export default function MovimentoPage() {
     };
 
     fetchData();
-  }, [triggerRefresh]); // Recarrega se o trigger mudar
+  }, [triggerRefresh]);
+
   const anos = [
     ...new Set(movimentos.map((movimento) => movimento.data.slice(0, 4))),
   ];
+
   const normalizarTexto = (texto?: string) => {
     if (!texto) return "";
     return texto
@@ -149,7 +149,7 @@ export default function MovimentoPage() {
     const hasFavorecido = !!mov.favorecido?.trim();
     const hasClassificacao = !!mov.classificacao;
     const isObra = mov.classificacao === "Obra";
-    const hasDemanda = !!mov.demanda?.trim(); // Replace 'demanda' with the correct property name from IMovimento
+    const hasDemanda = !!mov.demanda?.trim();
 
     if (!hasFavorecido && !hasClassificacao && !mov.observacao) return "vazio";
     if (
@@ -197,6 +197,15 @@ export default function MovimentoPage() {
     });
   }, [movimentosValidos, ano, mes, filtrosExtras]);
 
+  // 👇 Separação dos grupos baseada na função de status
+  const movimentosPendentes = movimentosFiltrados.filter(
+    (mov) => getStatusPreenchimento(mov) !== "completo"
+  );
+  
+  const movimentosClassificados = movimentosFiltrados.filter(
+    (mov) => getStatusPreenchimento(mov) === "completo"
+  );
+
   const handleClearFilters = () =>
     setFiltrosExtras({ banco: "", classificacao: "" });
 
@@ -206,63 +215,65 @@ export default function MovimentoPage() {
   const totalItens = movimentosFiltrados.length;
   const saldoMes = movimentosFiltrados.reduce(
     (acc, mov) => acc + Number(mov.valor || 0),
-    0,
+    0
   );
   const nomeMesSelecionado = MESES.find((m) => m.valor === mes)?.nome || "Mês";
 
-  // Função para exportar os movimentos visíveis na tela para Excel (CSV)
+  // Função auxiliar para renderizar os cards e evitar código duplicado
+  const renderCard = (mov: IMovimento) => {
+    const status = getStatusPreenchimento(mov);
+    const corBorda = statusColors[status];
+    const tituloCard =
+      mov.observacao === "" || !mov.observacao ? mov.descricao : mov.observacao;
+    const dataFormatada = mov.data.split("-").reverse().join("/");
+
+    return (
+      <MovimentoCard
+        key={mov.id}
+        mov={mov}
+        corBorda={corBorda}
+        tituloCard={tituloCard}
+        dataFormatada={dataFormatada}
+        isConsulta={isConsulta}
+        onClick={() => !isConsulta && router.push(`/movimento/${mov.id}`)}
+      />
+    );
+  };
+
   const exportarParaExcel = () => {
-    // ⚠️ Troque 'movimentosFiltrados' pelo nome do estado/variável que guarda a lista da tela
     if (!movimentosFiltrados || movimentosFiltrados.length === 0) {
       alert("Não há dados para exportar neste período.");
       return;
     }
 
-    // 1. Monta o Cabeçalho
     const cabecalho = [
-      "Data",
-      "Banco",
-      "Descricao",
-      "Favorecido",
-      "Classificacao",
-      "Valor",
-      "Demanda",
-      "Observacao",
+      "Data", "Banco", "Descricao", "Favorecido", 
+      "Classificacao", "Valor", "Demanda", "Observacao",
     ];
 
-    // 2. Monta as Linhas (Formatando os dados para o padrão BR)
     const linhas = movimentosFiltrados.map((m) => {
-      const dataFormatada = m.data
-        ? String(m.data).split("-").reverse().join("/")
-        : "";
-      const valorFormatado = Number(m.valor || 0)
-        .toFixed(2)
-        .replace(".", ","); // Converte 1500.50 para 1500,50
+      const dataFormatada = m.data ? String(m.data).split("-").reverse().join("/") : "";
+      const valorFormatado = Number(m.valor || 0).toFixed(2).replace(".", ",");
 
       return [
         dataFormatada,
-        `"${m.banco || ""}"`, // Aspas evitam que o Excel quebre a linha se o texto tiver vírgula
+        `"${m.banco || ""}"`,
         `"${m.descricao || ""}"`,
         `"${m.favorecido || ""}"`,
         `"${m.classificacao || ""}"`,
         valorFormatado,
         `"${m.demanda || ""}"`,
         `"${m.observacao || ""}"`,
-      ].join(";"); // Ponto e vírgula é o separador padrão do Excel em português
+      ].join(";");
     });
 
-    // 3. Junta tudo e cria o arquivo invisível na memória
     const csvString = [cabecalho.join(";"), ...linhas].join("\n");
-    const blob = new Blob(["\uFEFF" + csvString], {
-      type: "text/csv;charset=utf-8;",
-    }); // \uFEFF garante que acentos fiquem certos
+    const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
 
-    // 4. Força o download
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    // ⚠️ Se você tiver o mês/ano no state, pode colocar aqui (Ex: Movimentos_03_2026.csv)
-    link.setAttribute("download", `Movimentos_Exportados.csv`);
+    link.setAttribute("download", `Movimentos_${mes}_${ano}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -302,16 +313,10 @@ export default function MovimentoPage() {
             onClick={exportarParaExcel}
             sx={{ borderRadius: 2 }}
           >
-            <Typography
-              variant="body2"
-              sx={{ display: { xs: "none", sm: "block" } }}
-            >
+            <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
               Exportar Excel
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ display: { xs: "block", sm: "none" } }}
-            >
+            <Typography variant="body2" sx={{ display: { xs: "block", sm: "none" } }}>
               xls
             </Typography>
           </Button>
@@ -324,16 +329,10 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalRegrasOpen(true)}
               >
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
+                <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
                   Ocultar Registros
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "block", sm: "none" } }}
-                >
+                <Typography variant="body2" sx={{ display: { xs: "block", sm: "none" } }}>
                   Ocultar
                 </Typography>
               </Button>
@@ -344,16 +343,10 @@ export default function MovimentoPage() {
                 sx={{ borderRadius: 2 }}
                 onClick={() => setModalOfxOpen(true)}
               >
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
+                <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
                   Importar OFX
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "block", sm: "none" } }}
-                >
+                <Typography variant="body2" sx={{ display: { xs: "block", sm: "none" } }}>
                   OFX
                 </Typography>
               </Button>
@@ -363,9 +356,7 @@ export default function MovimentoPage() {
       </Box>
 
       {/* BARRA FIXA DE FILTROS */}
-      <Box
-        sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}
-      >
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
         <TextField
           select
           label="Ano"
@@ -375,9 +366,7 @@ export default function MovimentoPage() {
           sx={{ minWidth: 100, bgcolor: "#fff", borderRadius: 1 }}
         >
           {anos.map((a) => (
-            <MenuItem key={a} value={a}>
-              {a}
-            </MenuItem>
+            <MenuItem key={a} value={a}>{a}</MenuItem>
           ))}
         </TextField>
 
@@ -393,29 +382,15 @@ export default function MovimentoPage() {
             const dadosMes = statusPorMes[m.valor];
             let icone = null;
             if (dadosMes) {
-              icone =
-                dadosMes.completos === dadosMes.total ? (
-                  <CheckCircleIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", ml: 1 }}
-                  />
-                ) : (
-                  <WarningIcon
-                    fontSize="small"
-                    sx={{ color: "warning.main", ml: 1 }}
-                  />
-                );
+              icone = dadosMes.completos === dadosMes.total ? (
+                <CheckCircleIcon fontSize="small" sx={{ color: "success.main", ml: 1 }} />
+              ) : (
+                <WarningIcon fontSize="small" sx={{ color: "warning.main", ml: 1 }} />
+              );
             }
             return (
               <MenuItem key={m.valor} value={m.valor}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    width: "100%",
-                  }}
-                >
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                   {m.nome} {icone}
                 </Box>
               </MenuItem>
@@ -437,63 +412,36 @@ export default function MovimentoPage() {
       <Collapse in={showFilters}>
         <Paper
           sx={{
-            p: 3,
-            borderRadius: 3,
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            alignItems: "center",
-            bgcolor: "#f8f9fa",
+            p: 3, borderRadius: 3, display: "flex", gap: 2,
+            flexWrap: "wrap", alignItems: "center", bgcolor: "#f8f9fa",
           }}
         >
           <TextField
-            select
-            label="Banco"
-            size="small"
-            value={filtrosExtras.banco}
-            onChange={(e) =>
-              setFiltrosExtras({ ...filtrosExtras, banco: e.target.value })
-            }
+            select label="Banco" size="small" value={filtrosExtras.banco}
+            onChange={(e) => setFiltrosExtras({ ...filtrosExtras, banco: e.target.value })}
             sx={{ minWidth: 170 }}
           >
             <MenuItem value="">Todos</MenuItem>
             {["SANTANDER", "BRADESCO", "ITAU"].map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
+              <MenuItem key={t} value={t}>{t}</MenuItem>
             ))}
           </TextField>
 
           <TextField
-            select
-            label="Tipo de Despesa"
-            size="small"
-            value={filtrosExtras.classificacao}
-            onChange={(e) =>
-              setFiltrosExtras({
-                ...filtrosExtras,
-                classificacao: e.target.value,
-              })
-            }
+            select label="Tipo de Despesa" size="small" value={filtrosExtras.classificacao}
+            onChange={(e) => setFiltrosExtras({ ...filtrosExtras, classificacao: e.target.value })}
             sx={{ minWidth: 170 }}
           >
             <MenuItem value="">Todos</MenuItem>
             {["Fixa", "Obra", "Tributo", "Empréstimo", "Outra"].map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
+              <MenuItem key={t} value={t}>{t}</MenuItem>
             ))}
           </TextField>
 
           {isFilterActive && (
             <Button
               onClick={handleClearFilters}
-              sx={{
-                ml: "auto",
-                fontWeight: "200",
-                color: "gray",
-                textTransform: "none",
-              }}
+              sx={{ ml: "auto", fontWeight: "200", color: "gray", textTransform: "none" }}
             >
               Limpar Filtros
             </Button>
@@ -509,15 +457,12 @@ export default function MovimentoPage() {
         saldoMes={saldoMes}
       />
 
-      {/* LISTAGEM DE CARDS */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* LISTAGEM DE CARDS AGRUPADOS */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {movimentosFiltrados.length === 0 ? (
           <Paper
             sx={{
-              p: 5,
-              textAlign: "center",
-              border: "1px dashed #ccc",
-              bgcolor: "transparent",
+              p: 5, textAlign: "center", border: "1px dashed #ccc", bgcolor: "transparent",
             }}
           >
             <Typography color="text.secondary">
@@ -525,29 +470,52 @@ export default function MovimentoPage() {
             </Typography>
           </Paper>
         ) : (
-          movimentosFiltrados.map((mov) => {
-            const status = getStatusPreenchimento(mov);
-            const corBorda = statusColors[status];
-            const tituloCard =
-              mov.observacao === "" || !mov.observacao
-                ? mov.descricao
-                : mov.observacao;
-            const dataFormatada = mov.data.split("-").reverse().join("/");
+          <>
+            {/* GRUPO 1: PENDENTES */}
+            {movimentosPendentes.length > 0 && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: "bold", 
+                    color: "warning.main", 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    mb: 1
+                  }}
+                >
+                  <WarningIcon /> Sem Classificação ({movimentosPendentes.length})
+                </Typography>
+                {movimentosPendentes.map((mov) => renderCard(mov))}
+              </Box>
+            )}
 
-            return (
-              <MovimentoCard
-                key={mov.id}
-                mov={mov}
-                corBorda={corBorda}
-                tituloCard={tituloCard}
-                dataFormatada={dataFormatada}
-                isConsulta={isConsulta}
-                onClick={() =>
-                  !isConsulta && router.push(`/movimento/${mov.id}`)
-                }
-              />
-            );
-          })
+            {/* DIVISOR (Só mostra se existirem os dois grupos) */}
+            {movimentosPendentes.length > 0 && movimentosClassificados.length > 0 && (
+              <Divider sx={{ my: 2 }} />
+            )}
+
+            {/* GRUPO 2: CLASSIFICADOS */}
+            {movimentosClassificados.length > 0 && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: "bold", 
+                    color: "success.main", 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    mb: 1
+                  }}
+                >
+                  <CheckCircleIcon /> Classificadas ({movimentosClassificados.length})
+                </Typography>
+                {movimentosClassificados.map((mov) => renderCard(mov))}
+              </Box>
+            )}
+          </>
         )}
       </Box>
 
@@ -558,14 +526,14 @@ export default function MovimentoPage() {
         onSuccess={(anoImportado, mesImportado) => {
           setAno(anoImportado);
           setMes(mesImportado);
-          setTriggerRefresh((prev) => prev + 1); // Recarrega a tela com os novos dados
+          setTriggerRefresh((prev) => prev + 1);
         }}
       />
       <RegrasOcultacaoModal
         open={modalRegrasOpen}
         onClose={() => {
           setModalRegrasOpen(false);
-          setTriggerRefresh((prev) => prev + 1); // Recarrega se o usuário alterou as regras
+          setTriggerRefresh((prev) => prev + 1);
         }}
       />
     </Box>
