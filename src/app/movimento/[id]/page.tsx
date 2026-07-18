@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Typography, TextField, Button, CircularProgress, Paper, MenuItem, Divider, Snackbar, Alert 
+  Box, Typography, TextField, Button, CircularProgress, Paper, MenuItem, Divider, Snackbar, Alert, 
+  Tooltip
 } from '@mui/material';
 import { 
   Save as SaveIcon, 
   ArrowBack as ArrowBackIcon,
   VisibilityOff as VisibilityOffIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  AutoFixHigh as AutoModeIcon
 } from '@mui/icons-material';
 import { useRouter, useParams } from 'next/navigation';
 import { IMovimento, Classificacao } from '@/types/movimento';
@@ -16,6 +18,7 @@ import { IMovimento, Classificacao } from '@/types/movimento';
 // Importando os serviços e o Supabase
 import { obterMovimentoPorId, atualizarMovimento, excluirMovimento } from '@/services/movimentosService';
 import { supabase } from '@/lib/supabase';
+import { salvarRegra } from '@/services/regrasClassificacaoService';
 
 const TIPOS_DESPESA = ['Fixa', 'Obra', 'Tributo', 'Empréstimo', 'Outra'];
 const TIPOS_ENTRADA = ['Crédito Cliente', 'Empréstimo', 'Aporte sócio', 'Estorno Obra', 'Estorno outros', 'Rendimento', 'Outros'];
@@ -132,6 +135,23 @@ export default function EditarMovimentoPage() {
     }
   };
 
+  const handleCriarRegra = async () => {
+    if (!movimento.descricao) return;
+    
+    try {
+      await salvarRegra({
+        descricao_original: movimento.descricao,
+        favorecido: movimento.favorecido,
+        classificacao: movimento.classificacao,
+        observacao: movimento.observacao
+      });
+      setSnackbar({ open: true, msg: "Regra de auto-preenchimento salva com sucesso!", severity: "success" });
+    } catch (error) {
+      console.error("Erro ao salvar regra", error);
+      setSnackbar({ open: true, msg: "Erro ao salvar a regra.", severity: "error" });
+    }
+  };
+
   if (loading) {
     return <CircularProgress sx={{ display: 'block', m: '10% auto' }} />;
   }
@@ -232,9 +252,21 @@ export default function EditarMovimentoPage() {
 
       {/* SEÇÃO 2: CAMPOS EDITÁVEIS */}
       <Paper sx={{ p: 4, borderRadius: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          Classificação
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            Classificação
+          </Typography>
+          <Tooltip title="Sempre que o banco enviar esta descrição, vamos preencher os campos abaixo automaticamente para você.">
+            <Button 
+              variant="text" 
+              color="primary" 
+              startIcon={<AutoModeIcon />} 
+              onClick={handleCriarRegra}
+            >
+              Automatizar este preenchimento
+            </Button>
+          </Tooltip>
+        </Box>
         
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
           <TextField
