@@ -389,7 +389,14 @@ export default function MovimentoPage() {
           title="Movimento Financeiro"
           subtitle="Extratos bancários unificados e detalhados"
         />
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
           <Button
             variant="outlined"
             color="success"
@@ -472,7 +479,6 @@ export default function MovimentoPage() {
                   OFX
                 </Typography>
               </Button>
-              
             </>
           )}
         </Box>
@@ -640,20 +646,22 @@ export default function MovimentoPage() {
             {/* GRUPO 1: DUPLICADOS (COM MOLDURAS) */}
             {movimentosDuplicados.length > 0 && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: "bold",
-                    color: "error.main",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mb: 1,
-                  }}
-                >
-                  <ErrorIcon /> Possíveis Duplicados (
-                  {movimentosDuplicados.length})
-                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2, color: "error.main",}}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: "bold",
+                      display: "flex",
+                      gap: 1,
+                    }}
+                  >
+                    <ErrorIcon /> Possíveis Duplicados (
+                    {movimentosDuplicados.length})
+                  </Typography>
+                  <Typography variant="body2" sx={{alignSelf: "center"}}>
+                      Conferir com o extrato
+                    </Typography>
+                </Box>
 
                 {/* Aqui criamos a moldura para cada grupo de lançamentos idênticos */}
                 {Object.entries(gruposDuplicados).map(([chave, grupoMovs]) => (
