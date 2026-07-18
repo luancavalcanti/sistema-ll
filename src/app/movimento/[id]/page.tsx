@@ -7,13 +7,14 @@ import {
 import { 
   Save as SaveIcon, 
   ArrowBack as ArrowBackIcon,
-  VisibilityOff as VisibilityOffIcon 
+  VisibilityOff as VisibilityOffIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useRouter, useParams } from 'next/navigation';
 import { IMovimento, Classificacao } from '@/types/movimento';
 
 // Importando os serviços e o Supabase
-import { obterMovimentoPorId, atualizarMovimento } from '@/services/movimentosService';
+import { obterMovimentoPorId, atualizarMovimento, excluirMovimento } from '@/services/movimentosService';
 import { supabase } from '@/lib/supabase';
 
 const TIPOS_DESPESA = ['Fixa', 'Obra', 'Tributo', 'Empréstimo', 'Outra'];
@@ -24,10 +25,10 @@ export default function EditarMovimentoPage() {
   const params = useParams();
   const movimentoId = params.id as string;
 
-  // Utilizamos "any" ou estendemos Partial<IMovimento> aqui caso 'nota_fiscal' ainda não exista no type original
   const [movimento, setMovimento] = useState<Partial<IMovimento> & { nota_fiscal?: string }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false); // 👈 Novo estado para o botão de excluir
 
   // Estados para o botão de ocultar registro
   const [ocultando, setOcultando] = useState(false);
@@ -63,11 +64,9 @@ export default function EditarMovimentoPage() {
       
       // Regras de negócio ao alterar a Classificação:
       if (name === 'classificacao') {
-        // Se NÃO for 'Obra' nem 'Estorno Obra', limpa o número da demanda
         if (value !== 'Obra' && value !== 'Estorno Obra') {
           updated.demanda = '';
         }
-        // Se NÃO for 'Crédito Cliente', limpa a nota fiscal
         if (value !== 'Crédito Cliente') {
           updated.nota_fiscal = '';
         }
@@ -85,12 +84,28 @@ export default function EditarMovimentoPage() {
       router.push('/movimento');
     } catch (error) {
       console.error("Erro ao salvar movimento:", error);
+      setSnackbar({ open: true, msg: "Erro ao tentar salvar as alterações.", severity: "error" });
     } finally {
       setSaving(false);
     }
   };
 
-  // 4. Salvar Descrição nas Regras de Ocultação
+  // 4. Excluir o movimento via serviço 👈 NOVA FUNÇÃO
+  const handleDelete = async () => {
+    if (window.confirm(`Tem certeza que deseja excluir este lançamento de R$ ${movimento.valor}? Esta ação não pode ser desfeita.`)) {
+      setDeleting(true);
+      try {
+        await excluirMovimento(movimentoId);
+        router.push('/movimento');
+      } catch (error) {
+        console.error("Erro ao excluir movimento:", error);
+        setSnackbar({ open: true, msg: "Erro ao tentar excluir o registro.", severity: "error" });
+        setDeleting(false);
+      }
+    }
+  };
+
+  // 5. Salvar Descrição nas Regras de Ocultação
   const handleOcultarRegistro = async () => {
     if (!movimento.descricao) return;
     setOcultando(true);
@@ -134,7 +149,7 @@ export default function EditarMovimentoPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800, mx: 'auto', pb: 5 }}>
       
       {/* CABEÇALHO */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Button variant="outlined" onClick={() => router.push('/movimento')} sx={{ minWidth: 'auto', p: 1, borderRadius: 2 }}>
             <ArrowBackIcon />
@@ -143,16 +158,31 @@ export default function EditarMovimentoPage() {
             Classificar Movimento
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-          onClick={handleSave}
-          disabled={saving}
-          sx={{ borderRadius: 2, fontWeight: 'bold' }}
-        >
-          {saving ? 'Salvando...' : 'Salvar'}
-        </Button>
+
+        {/* 👇 Botões de Ação */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant="outlined" 
+            color="error" 
+            startIcon={deleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+            onClick={handleDelete}
+            disabled={saving || deleting}
+            sx={{ borderRadius: 2, fontWeight: 'bold' }}
+          >
+            {deleting ? 'Excluindo...' : 'Excluir'}
+          </Button>
+
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+            onClick={handleSave}
+            disabled={saving || deleting}
+            sx={{ borderRadius: 2, fontWeight: 'bold' }}
+          >
+            {saving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </Box>
       </Box>
 
       {/* SEÇÃO 1: DADOS ORIGINAIS DO BANCO (Somente Leitura) */}
@@ -231,7 +261,6 @@ export default function EditarMovimentoPage() {
           </TextField>
         </Box>
 
-        {/* Mostra o campo de Demanda APENAS se o tipo for Obra ou Estorno Obra */}
         {isObraOuEstorno && (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
@@ -246,7 +275,6 @@ export default function EditarMovimentoPage() {
           </Box>
         )}
 
-        {/* Mostra o campo de Nota Fiscal APENAS se o tipo for Crédito Cliente */}
         {isCreditoCliente && (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField

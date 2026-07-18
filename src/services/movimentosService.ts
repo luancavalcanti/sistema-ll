@@ -128,3 +128,28 @@ export const importarLoteOFX = async (lote: any[]) => {
 
   return { data, error };
 };
+
+// Adicione junto com as outras funções de movimento
+export const excluirMovimento = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('movimentos')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error("Erro ao excluir movimento:", error);
+    throw new Error(error.message);
+  }
+};
+
+export const marcarComoNaoDuplicado = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('movimentos')
+    .update({ ignorar_duplicidade: true })
+    .eq('id', id);
+
+  if (error) {
+    console.error("Erro ao marcar como não duplicado:", error);
+    throw new Error(error.message);
+  }
+};

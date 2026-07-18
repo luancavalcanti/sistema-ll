@@ -13,5 +13,6 @@ export interface IMovimento {
   observacao?: string;
   demanda?: string; // Só usado se tipoDespesa === 'Obra'
   nota_fiscal?: string;
+  ignorar_duplicidade?: boolean;
 }
 
