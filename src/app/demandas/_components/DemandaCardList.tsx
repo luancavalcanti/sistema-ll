@@ -16,6 +16,22 @@ interface Props {
 export const DemandaCardList = ({ demanda, onClick }: Props) => {
   const statusColor = STATUS_CONFIG[demanda.status] || "#ccc";
 
+  // 👇 1. Identificamos as condições de status
+  const isCanceladaOuDeclinada = demanda.status === "Cancelada" || demanda.status === "Declinada";
+  const isCreditada = demanda.status === "Creditada";
+
+  // 👇 2. Definimos a cor de fundo (usando alpha para manter suavidade)
+  let bgColor = "background.paper";
+  let hoverBgColor = "background.paper";
+
+  if (isCanceladaOuDeclinada) {
+    bgColor = alpha("#9e9e9e", 0.12); // Cinza claro
+    hoverBgColor = alpha("#9e9e9e", 0.20);
+  } else if (isCreditada) {
+    bgColor = alpha("#4caf50", 0.08); // Verde claro
+    hoverBgColor = alpha("#4caf50", 0.15);
+  }
+
   return (
     <Paper
       onClick={() => onClick(demanda)}
@@ -24,19 +40,22 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
         mb: 2,
         cursor: "pointer",
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: isCanceladaOuDeclinada ? "transparent" : "divider", // Remove borda se cancelada para ficar mais discreto
         borderRadius: 2,
-        overflow: "hidden", // Importante para a barra lateral não vazar
+        overflow: "hidden", 
         display: "flex",
-        transition: "0.2s",
+        bgcolor: bgColor, // 👈 Aplica o fundo definido
+        transition: "all 0.2s ease-in-out",
         "&:hover": {
           boxShadow: `0 4px 12px ${alpha(statusColor, 0.15)}`,
           transform: "translateX(4px)",
+          bgcolor: hoverBgColor, // 👈 Escurece levemente no hover
         },
       }}
     >
       {/* BARRA LATERAL DE STATUS */}
-      <Box sx={{ width: 6, bgcolor: statusColor }} />
+      {/* Se estiver cancelada, deixamos a barra cinza. Senão, usa a cor do status. */}
+      <Box sx={{ width: 6, bgcolor: isCanceladaOuDeclinada ? "#bdbdbd" : statusColor }} />
 
       {/* CONTEÚDO DO CARD */}
       <Box
@@ -48,13 +67,15 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
           alignItems: { xs: "flex-start", sm: "center" },
           gap: 2,
           flexWrap: "wrap",
+          opacity: isCanceladaOuDeclinada ? 0.55 : 1, // 👈 Apaga o texto pela metade se for cancelada/declinada
+          transition: "opacity 0.2s",
         }}
       >
         {/* CLIENTE E NÚMERO */}
         <Box sx={{ flex: 1.5 }}>
           <Typography
             variant="caption"
-            sx={{ fontWeight: 800, color: statusColor }}
+            sx={{ fontWeight: 800, color: isCanceladaOuDeclinada ? "text.secondary" : statusColor }}
           >
             #{demanda.numero}
           </Typography>
@@ -85,8 +106,8 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
             label={demanda.status}
             size="small"
             sx={{
-              bgcolor: alpha(statusColor, 0.1),
-              color: statusColor,
+              bgcolor: alpha(isCanceladaOuDeclinada ? "#9e9e9e" : statusColor, 0.1),
+              color: isCanceladaOuDeclinada ? "text.secondary" : statusColor,
               fontWeight: 800,
               borderRadius: 1,
             }}
