@@ -1,12 +1,15 @@
 "use client";
 
 import React from "react";
-import { Box, Paper, Typography, Chip, alpha } from "@mui/material";
+import { Box, Paper, Typography, Chip, alpha, Tooltip } from "@mui/material";
 import {
   LocationOn as LocationIcon,
   Business as BusinessIcon,
+  Warning as WarningIcon
 } from "@mui/icons-material";
 import { IDemanda, STATUS_CONFIG } from "@/types/demanda";
+import { calcularSLA } from "@/utils/sla";
+import { AccessTime as AccessTimeIcon } from "@mui/icons-material";
 
 interface Props {
   demanda: IDemanda;
@@ -32,6 +35,20 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
     hoverBgColor = alpha("#4caf50", 0.15);
   }
 
+  // 👇 3. Lógica para destacar faturamento parcial
+  const valorTotal = demanda.valor || 0;
+  const faturamentosValidos = demanda.faturamento?.filter(f => !f.cancelada) || [];
+  const totalFaturado = faturamentosValidos.reduce((acc, f) => acc + (Number(f.valor_fat) || 0), 0);
+  const faltaFaturar = valorTotal - totalFaturado;
+
+  // Mostra o alerta se o valor total for maior que 0, já tem algo faturado (totalFaturado > 0)
+  // e ainda falta faturar (faltaFaturar > 0.01)
+  const isParcialmenteFaturado = valorTotal > 0 && totalFaturado > 0 && faltaFaturar > 0.01;
+
+  // 👇 4. Cálculo do SLA (Atraso)
+  const sla = calcularSLA(demanda.status, demanda.atualizado_em || demanda.criadoEm);
+  const isSlaAtrasado = sla.atrasada;
+
   return (
     <Paper
       onClick={() => onClick(demanda)}
@@ -40,22 +57,22 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
         mb: 2,
         cursor: "pointer",
         border: "1px solid",
-        borderColor: isCanceladaOuDeclinada ? "transparent" : "divider", // Remove borda se cancelada para ficar mais discreto
+        borderColor: isCanceladaOuDeclinada ? "transparent" : (isParcialmenteFaturado ? "warning.main" : "divider"), // Destaca a borda do card
         borderRadius: 2,
         overflow: "hidden", 
         display: "flex",
         bgcolor: bgColor, // 👈 Aplica o fundo definido
         transition: "all 0.2s ease-in-out",
         "&:hover": {
-          boxShadow: `0 4px 12px ${alpha(statusColor, 0.15)}`,
+          boxShadow: `0 4px 12px ${alpha(isParcialmenteFaturado ? "#ed6c02" : statusColor, 0.15)}`,
           transform: "translateX(4px)",
           bgcolor: hoverBgColor, // 👈 Escurece levemente no hover
         },
       }}
     >
       {/* BARRA LATERAL DE STATUS */}
-      {/* Se estiver cancelada, deixamos a barra cinza. Senão, usa a cor do status. */}
-      <Box sx={{ width: 6, bgcolor: isCanceladaOuDeclinada ? "#bdbdbd" : statusColor }} />
+      {/* Se estiver cancelada, deixamos a barra cinza. Senão, usa a cor do status. Se tiver alerta de fat, usa amarelo/laranja */}
+      <Box sx={{ width: 6, bgcolor: isCanceladaOuDeclinada ? "#bdbdbd" : (isParcialmenteFaturado ? "warning.main" : statusColor) }} />
 
       {/* CONTEÚDO DO CARD */}
       <Box
@@ -102,22 +119,56 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
 
         {/* VALOR FINANCEIRO */}
         <Box sx={{ display: "flex", flexDirection:"column", alignItems: "flex-end", gap: 1, flex: 1 }}>
-          <Chip
-            label={demanda.status}
-            size="small"
-            sx={{
-              bgcolor: alpha(isCanceladaOuDeclinada ? "#9e9e9e" : statusColor, 0.1),
-              color: isCanceladaOuDeclinada ? "text.secondary" : statusColor,
-              fontWeight: 800,
-              borderRadius: 1,
-            }}
-          />
-          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-            {(demanda.valor || 0).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            })}
-          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isParcialmenteFaturado && (
+              <Tooltip title={`Falta faturar: ${(faltaFaturar).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`}>
+                <Chip
+                  icon={<WarningIcon sx={{ fontSize: '16px !important' }} />}
+                  label="Fat. Parcial"
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                  sx={{
+                    fontWeight: 800,
+                    borderRadius: 1,
+                    bgcolor: alpha("#ed6c02", 0.05)
+                  }}
+                />
+              </Tooltip>
+            )}
+            <Chip
+              label={demanda.status}
+              size="small"
+              sx={{
+                bgcolor: alpha(isCanceladaOuDeclinada ? "#9e9e9e" : statusColor, 0.1),
+                color: isCanceladaOuDeclinada ? "text.secondary" : statusColor,
+                fontWeight: 800,
+                borderRadius: 1,
+              }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+              {(demanda.valor || 0).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </Typography>
+            {isSlaAtrasado && (
+              <Chip 
+                icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
+                label={`${sla.diasOcioso} dias sem atualização`}
+                size="small"
+                color="error"
+                variant="outlined"
+                sx={{ 
+                  fontWeight: 700, 
+                  mt: 0.5,
+                  bgcolor: alpha("#d32f2f", 0.05)
+                }}
+              />
+            )}
+          </Box>
         </Box>
       </Box>
     </Paper>

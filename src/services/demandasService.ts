@@ -5,15 +5,14 @@ import { IFaturamento } from "@/types/faturamento";
 import { sincronizarFaturamentoDaDemanda } from "@/services/faturamentosService";
 
 export const buscarDemandas = async (
-  user: User, 
+  nomeExatoDoGestor: string, 
   isAdmin: boolean
 ): Promise<IDemanda[]> => {
-  const nomeExatoDoGestor = user.user_metadata?.nome || user.email || "";
 
-  // 1. SELECT LIMPO: Removido o join de faturamento daqui também para deixar a listagem rápida
+  // 1. SELECT: Incluído apenas os campos necessários de faturamento para permitir validação de parcialidade
   let query = supabase
     .from('demandas')
-    .select('*')
+    .select('*, faturamento:faturamentos(valor_fat, cancelada)')
     .order('numero', { ascending: false });
 
   if (!isAdmin) {
@@ -70,6 +69,7 @@ export const atualizarDemanda = async (
       valor: Number(demandaData.valor), 
       apoio: Number(demandaData.apoio) || 0, 
       gestao: Number(demandaData.gestao) || 0,
+      atualizado_em: new Date().toISOString(),
     })
     .eq('numero', numeroAtual); // 👈 Busca pelo antigo para conseguir alterar
 
@@ -127,6 +127,7 @@ export const criarDemanda = async (demandaData: Partial<IDemanda>, userId: strin
     gestao: 0,                                             
     criadoPor: userId,
     criadoEm: new Date().toISOString(),
+    atualizado_em: new Date().toISOString(),
   });
 
   if (error) {

@@ -38,6 +38,40 @@ export const sincronizarFaturamentoDaDemanda = async (
 
     const { error: errorFat } = await supabase.from('faturamentos').insert(faturamentoParaInserir);
     if (errorFat) throw new Error(errorFat.message);
+
+    // 3. Sincroniza com Movimentos Bancários
+    const { data: demanda } = await supabase
+      .from('demandas')
+      .select('cliente')
+      .eq('numero', String(demandaNumero))
+      .single();
+
+    if (demanda) {
+      for (const fat of faturamentoParaInserir) {
+        if (fat.data_cred && fat.valor_cred > 0 && !fat.cancelada) {
+          const { data: movimentosMatch } = await supabase
+            .from('movimentos')
+            .select('*')
+            .eq('data', fat.data_cred)
+            .eq('valor', fat.valor_cred);
+            
+          const movToUpdate = movimentosMatch?.find(m => !m.classificacao || m.classificacao === '');
+          
+          if (movToUpdate) {
+            await supabase
+              .from('movimentos')
+              .update({
+                favorecido: demanda.cliente,
+                classificacao: 'Crédito Cliente',
+                nota_fiscal: fat.nota_fiscal,
+                observacao: `Demanda ${demandaNumero}`,
+                demanda: String(demandaNumero)
+              })
+              .eq('id', movToUpdate.id);
+          }
+        }
+      }
+    }
   }
 };
 

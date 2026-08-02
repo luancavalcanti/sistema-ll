@@ -11,6 +11,7 @@ import {
 
 // 👇 Importando o type oficial 
 import { IFaturamento } from "@/types/faturamento"; 
+import { useAuth } from "@/contexts/AuthContext";
 
 interface FaturamentoProps {
   faturamentos: IFaturamento[];
@@ -28,6 +29,7 @@ export default function Faturamento({
   faturamentos, addFaturamento, updateFaturamento, cancelarFaturamento, removerFaturamento,
   valorTotalDemanda, valorTotalFaturado, diferencaFaturamento, is100Porcento
 }: FaturamentoProps) {
+  const { isUser } = useAuth();
 
   // --- MÁSCARA INTELIGENTE PARA O GRID ---
   const handleCurrencyChange = (id: string, field: string, value: string) => {
@@ -73,9 +75,11 @@ export default function Faturamento({
         <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
           Faturamento
         </Typography>
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addFaturamento} size="small">
-          Adicionar Nota Fiscal
-        </Button>
+        {!isUser && (
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addFaturamento} size="small">
+            Adicionar Nota Fiscal
+          </Button>
+        )}
       </Box>
 
       {valorTotalDemanda > 0 && (
@@ -116,14 +120,16 @@ export default function Faturamento({
                   </span>
                 </Tooltip>
 
-                {!fat.cancelada && (
+                {!isUser && !fat.cancelada && (
                   <IconButton color="warning" onClick={() => cancelarFaturamento(fat.id as string)} title="Cancelar Nota">
                     <BlockIcon fontSize="small" />
                   </IconButton>
                 )}
-                <IconButton color="error" onClick={() => removerFaturamento(fat.id as string)} title="Excluir Nota">
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                {!isUser && (
+                  <IconButton color="error" onClick={() => removerFaturamento(fat.id as string)} title="Excluir Nota">
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                )}
               </Box>
             </Box>
 
@@ -133,9 +139,9 @@ export default function Faturamento({
                 sx={{ flex: 1, minWidth: "120px" }} 
                 label="Nota Fiscal" 
                 size="small" 
-                value={fat.nota_fiscal} 
+                value={fat.nota_fiscal || ""} 
                 onChange={(e) => updateFaturamento(fat.id as string, "nota_fiscal", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
               <TextField 
                 sx={{ flex: 2, minWidth: "200px" }} 
@@ -143,7 +149,7 @@ export default function Faturamento({
                 size="small" 
                 value={fat.codigo_verificacao || ""} 
                 onChange={(e) => updateFaturamento(fat.id as string, "codigo_verificacao", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
             </Box>
 
@@ -155,9 +161,9 @@ export default function Faturamento({
                 type="date" 
                 size="small" 
                 InputLabelProps={{ shrink: true }} 
-                value={fat.data_fat} 
+                value={fat.data_fat || ""} 
                 onChange={(e) => updateFaturamento(fat.id as string, "data_fat", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
               <TextField 
                 sx={{ flex: 1, minWidth: "130px" }} 
@@ -165,7 +171,7 @@ export default function Faturamento({
                 size="small" 
                 value={formatarParaExibicao(fat.valor_fat)} 
                 onChange={(e) => handleCurrencyChange(fat.id as string, "valor_fat", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
               <TextField 
                 sx={{ flex: 1, minWidth: "130px" }} 
@@ -175,7 +181,7 @@ export default function Faturamento({
                 InputLabelProps={{ shrink: true }} 
                 value={fat.data_cred || ""} 
                 onChange={(e) => updateFaturamento(fat.id as string, "data_cred", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
               <TextField 
                 sx={{ flex: 1, minWidth: "130px" }} 
@@ -183,7 +189,7 @@ export default function Faturamento({
                 size="small" 
                 value={formatarParaExibicao(fat.valor_cred)} 
                 onChange={(e) => handleCurrencyChange(fat.id as string, "valor_cred", e.target.value)} 
-                disabled={fat.cancelada} 
+                disabled={fat.cancelada || isUser} 
               />
             </Box>
           </Box>

@@ -144,8 +144,9 @@ export default function Sidebar() {
           >
             <DashboardIcon />
           </ListItemIcon>
-          {!isCollapsed && <ListItemText primary="Dasboard" />}
+          {!isCollapsed && <ListItemText primary="Dashboard" />}
         </ListItemButton>
+
 
         {/*--- Menu Demandas ---*/}
         {isAdmin || isUser ? (

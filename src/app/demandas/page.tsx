@@ -16,15 +16,38 @@ import { supabase } from "@/lib/supabase";
 import { buscarDemandas } from "@/services/demandasService";
 
 export default function DemandasPage() {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, nome, isAdmin, loading: authLoading } = useAuth();
   const [demandas, setDemandas] = useState<IDemanda[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Estados dos Filtros
-  const [anoFiltro, setAnoFiltro] = useState<string>("2026");
+  // Estados dos Filtros (Inicialmente definidos com padrão, depois hidratados pelo sessionStorage)
+  const [anoFiltro, setAnoFiltro] = useState<string>(new Date().getFullYear().toString());
   const [statusFiltro, setStatusFiltro] = useState<string>("Todos");
   const [busca, setBusca] = useState<string>("");
+  const [filtrosCarregados, setFiltrosCarregados] = useState(false);
+
+  // 1. Carrega os filtros salvos na sessão ao montar a tela
+  useEffect(() => {
+    const savedAno = sessionStorage.getItem("demandas_ano");
+    const savedStatus = sessionStorage.getItem("demandas_status");
+    const savedBusca = sessionStorage.getItem("demandas_busca");
+
+    if (savedAno) setAnoFiltro(savedAno);
+    if (savedStatus) setStatusFiltro(savedStatus);
+    if (savedBusca) setBusca(savedBusca);
+
+    setFiltrosCarregados(true);
+  }, []);
+
+  // 2. Salva os filtros na sessão sempre que mudarem
+  useEffect(() => {
+    if (filtrosCarregados) {
+      sessionStorage.setItem("demandas_ano", anoFiltro);
+      sessionStorage.setItem("demandas_status", statusFiltro);
+      sessionStorage.setItem("demandas_busca", busca);
+    }
+  }, [anoFiltro, statusFiltro, busca, filtrosCarregados]);
   const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState<string>("");
 
   useEffect(() => {
@@ -34,23 +57,13 @@ export default function DemandasPage() {
       try {
         setLoading(true);
 
-        // 👇 Nova Etapa: Buscar o nome na tabela 'users' caso não seja Admin
+        const nomeGestor = nome || user?.user_metadata?.nome || user?.email || "";
         if (!isAdmin) {
-          const { data: userData, error: userError } = await supabase
-            .from('users') // Nome da sua tabela
-            .select('nome')
-            .eq('id', user.id) // Assumindo que a coluna de relação com a auth seja 'id'
-            .single();
-
-          if (userData && !userError) {
-            setNomeUsuarioLogado(userData.nome);
-          } else {
-            console.error("Erro ao buscar nome do usuário:", userError);
-          }
+          setNomeUsuarioLogado(nomeGestor);
         }
 
-        // Busca as demandas (já estava aqui)
-        const dadosProntos = await buscarDemandas(user, isAdmin);
+        // Busca as demandas
+        const dadosProntos = await buscarDemandas(nomeGestor, isAdmin);
         setDemandas(dadosProntos);
       } catch (error) {
         console.error("Falha ao carregar demandas:", error);
@@ -60,7 +73,7 @@ export default function DemandasPage() {
     };
 
     iniciar();
-  }, [user?.id, isAdmin, authLoading]);
+  }, [user?.id, nome, isAdmin, authLoading]);
 
   // Função auxiliar para ignorar acentos e maiúsculas na busca
   const normalizarTexto = (texto?: string) => {

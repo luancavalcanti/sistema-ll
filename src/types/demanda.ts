@@ -1,6 +1,6 @@
 import { IFaturamento } from "./faturamento";
 
-export type DemandaStatus = 'Aberta' | 'Em Execução' | 'Finalizada' | 'Cancelada';
+export type DemandaStatus = 'Nova' | 'Proposta' | 'Aprovada' | 'Autorizada a Faturar' | 'Faturada' | 'Creditada' | 'Declinada' | 'Aberta' | 'Em Execução' | 'Finalizada' | 'Cancelada';
 
 
 
@@ -17,6 +17,8 @@ export interface IDemanda {
   gestao: number;
   apoio: number;
   obs?: string;
+  criadoEm?: string;
+  atualizado_em?: string;
   faturamento?: IFaturamento[];
 }
 
@@ -24,6 +26,7 @@ export const STATUS_CONFIG: Record<string, string> = {
   "Nova": "#6f42c1",
   "Proposta": "#0d6efd",
   "Aprovada": "#28a745",
+  "Autorizada a Faturar": "#fd7e14",
   "Concluída": "#17a2b8",
   "Faturada": "#ffc107",
   "Creditada": "#20c997",

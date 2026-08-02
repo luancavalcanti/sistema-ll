@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Box, Button, CircularProgress, Dialog, DialogTitle, DialogContent, 
-  DialogActions, TextField, IconButton, Typography 
+  DialogActions, TextField, IconButton, Typography, Chip, alpha 
 } from "@mui/material";
 import { 
   Save as SaveIcon, ArrowBack as ArrowBackIcon, Edit as EditIcon 
@@ -14,9 +14,11 @@ import { IMovimento } from "@/types/movimento";
 import { IFaturamento } from "@/types/faturamento";
 import Title from "@/components/Title";
 import { supabase } from "@/lib/supabase"; // Necessário para a validação
+import { calcularSLA } from "@/utils/sla";
+import { AccessTime as AccessTimeIcon } from "@mui/icons-material";
 
 import { atualizarDemanda, buscarDemandaPorNumero } from "@/services/demandasService";
-import { buscarMovimentosDaDemanda } from "@/services/movimentosService";
+import { buscarMovimentosDaDemanda, obterUltimaDataMovimento } from "@/services/movimentosService";
 import { buscarFaturamentosPorDemanda } from "@/services/faturamentosService";
 
 import InformacoesBasicas from "../_components/InformacoesBasicas";
@@ -38,6 +40,7 @@ export default function EditarDemandaPage() {
   
   const [movimentosDemanda, setMovimentosDemanda] = useState<IMovimento[]>([]);
   const [loadingFinanceiro, setLoadingFinanceiro] = useState(true);
+  const [ultimaDataAtualizacao, setUltimaDataAtualizacao] = useState<string | null>(null);
 
   // Estados para o Modal de Edição de Número
   const [openModalNumero, setOpenModalNumero] = useState(false);
@@ -88,8 +91,12 @@ export default function EditarDemandaPage() {
     const fetchMovimentos = async () => {
       if (!numeroDemandaDaURL) return;
       try {
-        const movimentos = await buscarMovimentosDaDemanda(numeroDemandaDaURL);
+        const [movimentos, ultimaData] = await Promise.all([
+          buscarMovimentosDaDemanda(numeroDemandaDaURL),
+          obterUltimaDataMovimento()
+        ]);
         setMovimentosDemanda(movimentos || []);
+        setUltimaDataAtualizacao(ultimaData);
       } catch (error) {
         console.error("Erro ao carregar financeiro", error);
       } finally {
@@ -223,8 +230,31 @@ export default function EditarDemandaPage() {
             <ArrowBackIcon />
           </Button>
           
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Title title={`Demanda ${demanda.numero}`} subtitle="Gerencie as informações financeiras desta demanda" />
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Title title={`Demanda ${demanda.numero}`} subtitle="Gerencie as informações financeiras desta demanda" />
+              {demanda.status && (() => {
+                const sla = calcularSLA(demanda.status, demanda.atualizado_em || demanda.criadoEm);
+                if (sla.atrasada) {
+                  return (
+                    <Chip 
+                      icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
+                      label={`${sla.diasOcioso} dias sem atualização`}
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      sx={{ 
+                        fontWeight: 700, 
+                        bgcolor: alpha("#d32f2f", 0.05),
+                        alignSelf: "flex-start",
+                        mt: 0.5
+                      }}
+                    />
+                  );
+                }
+                return null;
+              })()}
+            </Box>
             <IconButton 
               size="small" 
               color="primary" 
@@ -292,6 +322,7 @@ export default function EditarDemandaPage() {
         <ResumoFinanceiro 
           loadingFinanceiro={loadingFinanceiro} movimentosDemanda={movimentosDemanda} 
           totalDespesas={totalDespesas} valorTotalFaturado={valorTotalFaturado} saldoDemanda={saldoDemanda} 
+          ultimaDataAtualizacao={ultimaDataAtualizacao}
         />
       )}
     </Box>

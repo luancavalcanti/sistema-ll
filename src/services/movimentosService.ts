@@ -43,6 +43,23 @@ export const buscarTodosMovimentos = async () => {
 };
 
 // ============================================================================
+// BUSCAR A ÚLTIMA DATA DE MOVIMENTO REGISTRADA (SUPABASE)
+// ============================================================================
+export const obterUltimaDataMovimento = async (): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('movimentos')
+    .select('data')
+    .order('data', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+  return data.data;
+};
+
+// ============================================================================
 // BUSCAR MOVIMENTOS DE UMA DEMANDA (SUPABASE)
 // ============================================================================
 export const buscarMovimentosDaDemanda = async (
@@ -125,6 +142,47 @@ export const importarLoteOFX = async (lote: any[]) => {
     // 👇 Mudamos o onConflict para olhar as 3 colunas juntas!
     .upsert(lote, { onConflict: 'fitid,data,valor', ignoreDuplicates: true }) 
     .select();
+
+  if (error) return { data, error };
+
+  // Sincronização automática: Verifica se os novos créditos já possuem notas fiscais correspondentes
+  if (data && data.length > 0) {
+    for (const mov of data) {
+      if (mov.valor > 0 && (!mov.classificacao || mov.classificacao === '')) {
+        // Busca um faturamento com mesma data e valor
+        const { data: faturamentosMatch } = await supabase
+          .from('faturamentos')
+          .select('demandaId, nota_fiscal')
+          .eq('data_cred', mov.data)
+          .eq('valor_cred', mov.valor)
+          .eq('cancelada', false);
+
+        if (faturamentosMatch && faturamentosMatch.length > 0) {
+          const fat = faturamentosMatch[0];
+
+          // Busca o nome do cliente da demanda
+          const { data: demanda } = await supabase
+            .from('demandas')
+            .select('cliente')
+            .eq('numero', fat.demandaId)
+            .single();
+
+          if (demanda) {
+            await supabase
+              .from('movimentos')
+              .update({
+                favorecido: demanda.cliente,
+                classificacao: 'Crédito Cliente',
+                nota_fiscal: fat.nota_fiscal,
+                observacao: `Demanda ${fat.demandaId}`,
+                demanda: String(fat.demandaId)
+              })
+              .eq('id', mov.id);
+          }
+        }
+      }
+    }
+  }
 
   return { data, error };
 };

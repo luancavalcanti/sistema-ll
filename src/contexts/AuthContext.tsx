@@ -10,6 +10,7 @@ export type UserRole = 'admin' | 'user' | 'consulta' | null;
 interface AuthContextType {
   user: User | null;
   role: UserRole;
+  nome: string;
   loading: boolean;
   isAdmin: boolean;
   isUser: boolean;
@@ -19,6 +20,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   role: null,
+  nome: "",
   loading: true,
   isAdmin: false,
   isUser: false,
@@ -28,16 +30,19 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>(null);
+  const [nome, setNome] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUserRole = async (currentUser: User) => {
+    const fetchUserData = async (currentUser: User) => {
       try {
-        const { data } = await supabase.from('users').select('role').eq('id', currentUser.id).single();
+        const { data } = await supabase.from('users').select('role, nome').eq('id', currentUser.id).single();
         setRole((data?.role as UserRole) || 'user');
+        setNome(data?.nome || "");
       } catch (error) {
         setRole('user');
+        setNome("");
       }
     };
 
@@ -45,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
-        await fetchUserRole(session.user);
+        await fetchUserData(session.user);
       }
       setLoading(false);
     };
@@ -61,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (session?.user) {
             setUser(session.user);
             if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-              await fetchUserRole(session.user); // Agora esse await está seguro!
+              await fetchUserData(session.user); // Agora esse await está seguro!
             }
           } else {
             setUser(null);
@@ -84,6 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = { 
     user, 
     role, 
+    nome,
     loading, 
     isAdmin: role === 'admin',
     isUser: role === 'user',

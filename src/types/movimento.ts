@@ -1,4 +1,4 @@
-export type Classificacao = 'Fixa' | 'Obra' | 'Tributo' | 'Empréstimo' | 'Outra' | '';
+export type Classificacao = 'Fixa' | 'Obra' | 'Tributo' | 'Empréstimo' | 'Outra' | 'Crédito Cliente' | 'Aporte sócio' | 'Estorno Obra' | 'Estorno outros' | 'Rendimento' | 'Outros' | '';
 
 export interface IMovimento {
   id: string;

@@ -7,14 +7,23 @@ interface ResumoFinanceiroProps {
   totalDespesas: number;
   valorTotalFaturado: number;
   saldoDemanda: number;
+  ultimaDataAtualizacao?: string | null;
 }
 
-export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda, totalDespesas, valorTotalFaturado, saldoDemanda }: ResumoFinanceiroProps) {
+export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda, totalDespesas, valorTotalFaturado, saldoDemanda, ultimaDataAtualizacao }: ResumoFinanceiroProps) {
   return (
     <Box sx={{ mt: 5, display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
-        Resumo Financeiro
-      </Typography>
+      <Box>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
+          Resumo Financeiro
+        </Typography>
+        {ultimaDataAtualizacao && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+            Dados atualizados conforme último movimento importado (<strong>{ultimaDataAtualizacao.split("-").reverse().join("/")}</strong>).<br/>
+            <span style={{ fontStyle: "italic", fontSize: "0.7rem" }}>*Podem haver mais saídas que ainda não foram processadas em futuros movimentos.</span>
+          </Typography>
+        )}
+      </Box>
 
       {loadingFinanceiro ? (
         <CircularProgress sx={{ display: "block", mx: "auto", my: 3 }} />
