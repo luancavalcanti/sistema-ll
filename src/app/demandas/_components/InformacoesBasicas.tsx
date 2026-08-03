@@ -7,9 +7,10 @@ interface InformacoesBasicasProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   ufs: { sigla: string; nome: string }[];
   cidades: { nome: string }[];
+  role?: string | null;
 }
 
-export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades }: InformacoesBasicasProps) {
+export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades, role }: InformacoesBasicasProps) {
   
   // --- MÁSCARA INTELIGENTE DE MOEDA ---
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,20 +84,24 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
           value={formatarParaExibicao(demanda.valor)} 
           onChange={handleCurrencyChange} 
         />
-        <TextField 
-          sx={{ flex: 1 }} 
-          label="Valor Apoio (R$)" 
-          name="apoio" 
-          value={formatarParaExibicao(demanda.apoio)} 
-          onChange={handleCurrencyChange} 
-        />
-        <TextField 
-          sx={{ flex: 1 }} 
-          label="Valor Gestão (R$)" 
-          name="gestao" 
-          value={formatarParaExibicao(demanda.gestao)} 
-          onChange={handleCurrencyChange} 
-        />
+        {role !== "user" && (
+          <>
+            <TextField 
+              sx={{ flex: 1 }} 
+              label="Valor Apoio (R$)" 
+              name="apoio" 
+              value={formatarParaExibicao(demanda.apoio)} 
+              onChange={handleCurrencyChange} 
+            />
+            <TextField 
+              sx={{ flex: 1 }} 
+              label="Valor Gestão (R$)" 
+              name="gestao" 
+              value={formatarParaExibicao(demanda.gestao)} 
+              onChange={handleCurrencyChange} 
+            />
+          </>
+        )}
       </Box>
 
       <TextField fullWidth multiline rows={2} label="Observações / Descrição" name="obs" value={demanda.obs || ""} onChange={handleChange} />

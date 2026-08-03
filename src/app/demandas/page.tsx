@@ -17,7 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { buscarDemandas } from "@/services/demandasService";
 
 export default function DemandasPage() {
-  const { user, nome, isAdmin, loading: authLoading } = useAuth();
+  const { user, nome, isAdmin, role, loading: authLoading } = useAuth();
   const [demandas, setDemandas] = useState<IDemanda[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -149,14 +149,16 @@ export default function DemandasPage() {
       {/* CABEÇALHO */}
       <Box sx={{ display: "flex", justifyContent: {xs: "flex-end", sm: "space-between"}, alignItems: "center", flexWrap: "wrap", gap: 2 }}>
         <Title title="Demandas" subtitle="Gerenciamento de ordens de serviço - LL Engenharia" />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{ borderRadius: 2, fontWeight: "bold" }}
-          onClick={() => router.push('/demandas/nova')}
-        >
-          Nova Demanda
-        </Button>
+        {role !== "user" && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{ borderRadius: 2, fontWeight: "bold" }}
+            onClick={() => router.push('/demandas/nova')}
+          >
+            Nova Demanda
+          </Button>
+        )}
       </Box>
 
       {/* CAMPO DE BUSCA */}

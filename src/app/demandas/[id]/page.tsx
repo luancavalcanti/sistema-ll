@@ -9,6 +9,7 @@ import {
   Save as SaveIcon, ArrowBack as ArrowBackIcon, Edit as EditIcon 
 } from "@mui/icons-material";
 import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { IDemanda } from "@/types/demanda";
 import { IMovimento } from "@/types/movimento";
 import { IFaturamento } from "@/types/faturamento";
@@ -28,6 +29,7 @@ import ResumoFinanceiro from "../_components/ResumoFinanceiro";
 export default function EditarDemandaPage() {
   const router = useRouter();
   const params = useParams();
+  const { role } = useAuth();
   const numeroDemandaDaURL = params.id as string;
 
   const [demanda, setDemanda] = useState<Partial<IDemanda>>({});
@@ -307,7 +309,7 @@ export default function EditarDemandaPage() {
       </Dialog>
 
       {/* COMPONENTES MODULARIZADOS */}
-      <InformacoesBasicas demanda={demanda} handleChange={handleChange} ufs={ufs} cidades={cidades} />
+      <InformacoesBasicas demanda={demanda} handleChange={handleChange} ufs={ufs} cidades={cidades} role={role} />
 
       {!["Nova", "Proposta"].includes(demanda.status || "") && (
         <Faturamento 
@@ -318,7 +320,7 @@ export default function EditarDemandaPage() {
         />
       )}
 
-      {!["Nova", "Proposta"].includes(demanda.status || "") && (
+      {!["Nova", "Proposta"].includes(demanda.status || "") && role !== "user" && (
         <ResumoFinanceiro 
           loadingFinanceiro={loadingFinanceiro} movimentosDemanda={movimentosDemanda} 
           totalDespesas={totalDespesas} valorTotalFaturado={valorTotalFaturado} saldoDemanda={saldoDemanda} 
