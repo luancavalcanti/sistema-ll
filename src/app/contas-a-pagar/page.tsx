@@ -117,6 +117,13 @@ export default function ContasAPagarPage() {
   const contasPagas = contasFiltradas.filter(c => c.status === "Pago");
   const contasExibidas = abaAtual === 0 ? contasPendentes : contasPagas;
 
+  const hoje = new Date();
+  const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
+
+  const valorUrgente = contasPendentes
+    .filter(c => c.data_vencimento && c.data_vencimento <= hojeStr)
+    .reduce((acc, c) => acc + Number(c.valor), 0);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: "lg", mx: "auto", pb: 5 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
@@ -162,6 +169,12 @@ export default function ContasAPagarPage() {
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {abaAtual === 0 && valorUrgente > 0 && (
+          <Typography variant="body2" color="error" sx={{ fontWeight: "bold", textAlign: "right", mb: -1 }}>
+            Total Vencidos/Vence Hoje: R$ {valorUrgente.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </Typography>
+        )}
+
         {contasExibidas.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: "center", border: "1px dashed #ccc", bgcolor: "transparent" }}>
             <Typography color="text.secondary">Nenhum registro encontrado para este período.</Typography>
