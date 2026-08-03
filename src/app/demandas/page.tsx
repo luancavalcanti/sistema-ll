@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   Box, Typography, Button, Chip, alpha, CircularProgress, 
-  Paper, Badge, TextField, MenuItem, InputAdornment 
+  Paper, Badge, TextField, MenuItem, InputAdornment,
+  FormControlLabel, Switch
 } from "@mui/material";
 import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ export default function DemandasPage() {
   const [anoFiltro, setAnoFiltro] = useState<string>(new Date().getFullYear().toString());
   const [statusFiltro, setStatusFiltro] = useState<string>("Todos");
   const [busca, setBusca] = useState<string>("");
+  const [mostrarCanceladas, setMostrarCanceladas] = useState<boolean>(false);
   const [filtrosCarregados, setFiltrosCarregados] = useState(false);
 
   // 1. Carrega os filtros salvos na sessão ao montar a tela
@@ -32,10 +34,12 @@ export default function DemandasPage() {
     const savedAno = sessionStorage.getItem("demandas_ano");
     const savedStatus = sessionStorage.getItem("demandas_status");
     const savedBusca = sessionStorage.getItem("demandas_busca");
+    const savedMostrarCanceladas = sessionStorage.getItem("demandas_mostrar_canceladas");
 
     if (savedAno) setAnoFiltro(savedAno);
     if (savedStatus) setStatusFiltro(savedStatus);
     if (savedBusca) setBusca(savedBusca);
+    if (savedMostrarCanceladas) setMostrarCanceladas(savedMostrarCanceladas === "true");
 
     setFiltrosCarregados(true);
   }, []);
@@ -46,8 +50,9 @@ export default function DemandasPage() {
       sessionStorage.setItem("demandas_ano", anoFiltro);
       sessionStorage.setItem("demandas_status", statusFiltro);
       sessionStorage.setItem("demandas_busca", busca);
+      sessionStorage.setItem("demandas_mostrar_canceladas", mostrarCanceladas.toString());
     }
-  }, [anoFiltro, statusFiltro, busca, filtrosCarregados]);
+  }, [anoFiltro, statusFiltro, busca, mostrarCanceladas, filtrosCarregados]);
   const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState<string>("");
 
   useEffect(() => {
@@ -83,18 +88,22 @@ export default function DemandasPage() {
 
   // 👇 Restrição de visualização baseada no Role/Gestor
   const demandasVisiveis = useMemo(() => {
-    if (isAdmin) return demandas; // Admin enxerga tudo absoluto
+    let filtradas = demandas;
 
-    // Usa o estado que preenchemos na consulta ao banco
-    const nomeNormalizado = normalizarTexto(nomeUsuarioLogado);
+    if (!isAdmin) {
+      const nomeNormalizado = normalizarTexto(nomeUsuarioLogado);
+      filtradas = filtradas.filter((d) => {
+        if (!nomeNormalizado) return false; 
+        return normalizarTexto(d.gestor) === nomeNormalizado;
+      });
+    }
 
-    return demandas.filter((d) => {
-      // Se o estado ainda estiver vazio (carregando), não mostra nada por segurança
-      if (!nomeNormalizado) return false; 
-      
-      return normalizarTexto(d.gestor) === nomeNormalizado;
-    });
-  }, [demandas, isAdmin, nomeUsuarioLogado]);
+    if (!mostrarCanceladas) {
+      filtradas = filtradas.filter(d => d.status !== "Cancelada" && d.status !== "Declinada");
+    }
+
+    return filtradas;
+  }, [demandas, isAdmin, nomeUsuarioLogado, mostrarCanceladas]);
 
   // 👇 2. Filtro de Tela (Ano + Status + Busca) alimentado pelas demandas permitidas
   const demandasFiltradas = useMemo(() => {
@@ -166,19 +175,32 @@ export default function DemandasPage() {
         }}
       />
 
-      {/* FILTRO DE ANO */}
-      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-        {[...new Set(listaAnos)].map((ano) => (
-          <Button
-            key={ano}
-            variant={anoFiltro === ano ? "contained" : "outlined"}
-            onClick={() => setAnoFiltro(ano)}
-            size="small"
-            sx={{ borderRadius: "8px", px: 3, fontWeight: 700 }}
-          >
-            {ano}
-          </Button>
-        ))}
+      {/* FILTRO DE ANO E CONTROLES */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 2, alignItems: "center", mb: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          {[...new Set(listaAnos)].map((ano) => (
+            <Button
+              key={ano}
+              variant={anoFiltro === ano ? "contained" : "outlined"}
+              onClick={() => setAnoFiltro(ano)}
+              size="small"
+              sx={{ borderRadius: "8px", px: 3, fontWeight: 700 }}
+            >
+              {ano}
+            </Button>
+          ))}
+        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={mostrarCanceladas}
+              onChange={(e) => setMostrarCanceladas(e.target.checked)}
+              size="small"
+              color="primary"
+            />
+          }
+          label={<Typography variant="body2" color="text.secondary" fontWeight="bold">Mostrar Canceladas / Declinadas</Typography>}
+        />
       </Box>
 
       {/* FILTRO DE STATUS - CELULAR */}
