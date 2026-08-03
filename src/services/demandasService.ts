@@ -54,23 +54,44 @@ export const atualizarDemanda = async (
   // Descobre qual é o número final (o novo que veio da tela, ou mantém o atual)
   const numeroFinal = demandaData.numero ? String(demandaData.numero) : numeroAtual;
 
+  // Busca a demanda atual no banco para comparar o status
+  const { data: demandaAntiga, error: errorBusca } = await supabase
+    .from('demandas')
+    .select('status')
+    .eq('numero', numeroAtual)
+    .single();
+
+  if (errorBusca) {
+    console.error("Erro ao buscar demanda para atualizar:", errorBusca);
+    throw new Error(errorBusca.message);
+  }
+
+  const statusMudou = demandaData.status && demandaData.status !== demandaAntiga.status;
+
+  // Monta os dados de atualização
+  const payloadAtualizacao: any = {
+    numero: numeroFinal, 
+    cliente: demandaData.cliente, 
+    gestor: demandaData.gestor, 
+    local: demandaData.local,
+    uf: demandaData.uf, 
+    cidade: demandaData.cidade, 
+    obs: demandaData.obs, 
+    status: demandaData.status,
+    valor: Number(demandaData.valor), 
+    apoio: Number(demandaData.apoio) || 0, 
+    gestao: Number(demandaData.gestao) || 0,
+  };
+
+  // Só atualiza a data de 'atualizado_em' se o status realmente mudou
+  if (statusMudou) {
+    payloadAtualizacao.atualizado_em = new Date().toISOString();
+  }
+
   // 1. Atualiza a Demanda
   const { error: errorDemanda } = await supabase
     .from('demandas')
-    .update({
-      numero: numeroFinal, // 👈 AQUI ESTAVA FALTANDO! Agora salva o novo número no banco
-      cliente: demandaData.cliente, 
-      gestor: demandaData.gestor, 
-      local: demandaData.local,
-      uf: demandaData.uf, 
-      cidade: demandaData.cidade, 
-      obs: demandaData.obs, 
-      status: demandaData.status,
-      valor: Number(demandaData.valor), 
-      apoio: Number(demandaData.apoio) || 0, 
-      gestao: Number(demandaData.gestao) || 0,
-      atualizado_em: new Date().toISOString(),
-    })
+    .update(payloadAtualizacao)
     .eq('numero', numeroAtual); // 👈 Busca pelo antigo para conseguir alterar
 
   if (errorDemanda) {

@@ -33,6 +33,13 @@ O ciclo de vida de uma Demanda é gerenciado **manualmente** e foi projetado par
 
 ---
 
+## ⏳ Regras de Contagem de Prazo (SLA)
+
+- O campo `atualizado_em` no banco de dados controla há quanto tempo uma demanda está parada em um determinado status.
+- **Importante:** O SLA (tempo parado) só é **zerado** quando o usuário altera o **Status** da demanda. Salvar a demanda para atualizar apenas valores, datas, descrições, ou informações comerciais NÃO reseta o contador de dias parados.
+
+---
+
 ## 📈 Integração de Faturamento Pendente
 
 - O "Valor Total da Demanda" (cadastrado na aba Informações Básicas) é cruzado com todas as **Notas Fiscais Emitidas** associadas àquela demanda.
