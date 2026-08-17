@@ -1,5 +1,5 @@
 import React from "react";
-import { Paper, Typography, Box, TextField, MenuItem } from "@mui/material";
+import { Paper, Typography, Box, TextField, MenuItem, Divider } from "@mui/material";
 import { IDemanda, STATUS_CONFIG } from "@/types/demanda";
 
 interface InformacoesBasicasProps {
@@ -55,10 +55,45 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
                 <MenuItem key ={idx} value={gestor}>{gestor}</MenuItem>
             )}
         </TextField>
-        <TextField sx={{ flex: 0.5 }} select label="Status" name="status" value={demanda.status || "Nova"} onChange={handleChange}>
-          {Object.keys(STATUS_CONFIG).map((st) => (
-            <MenuItem key={st} value={st}>{st}</MenuItem>
-          ))}
+        <TextField 
+          sx={{ flex: 0.5 }} 
+          select 
+          label="Status" 
+          name="status" 
+          value={demanda.status || "Nova"} 
+          onChange={handleChange}
+          SelectProps={{
+            renderValue: (selected) => {
+              const val = selected as string;
+              return (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
+                  <Box sx={{ width: 4, height: 16, borderRadius: 2, flexShrink: 0, bgcolor: STATUS_CONFIG[val] || "#ccc" }} />
+                  <Box sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {val === "Autorizada a Faturar" ? "Aut. a Faturar" : val}
+                  </Box>
+                </Box>
+              );
+            }
+          }}
+        >
+          {[
+            "Nova", "Proposta", "Aprovada", "Concluída", "Autorizada a Faturar", 
+            "Faturada", "Creditada", "Cancelada", "Declinada"
+          ].map((st) => {
+            const elementos = [];
+            if (st === "Cancelada") {
+              elementos.push(<Divider key="div-status" />);
+            }
+            elementos.push(
+              <MenuItem key={st} value={st} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box sx={{ width: 4, height: 16, borderRadius: 2, flexShrink: 0, bgcolor: STATUS_CONFIG[st] || "#ccc" }} />
+                <Box sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {st === "Autorizada a Faturar" ? "Aut. a Faturar" : st}
+                </Box>
+              </MenuItem>
+            );
+            return elementos;
+          })}
         </TextField>
       </Box>
 

@@ -265,7 +265,7 @@ export default function EditarDemandaPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mt: 1 }}>
                 {[
                   {
-                    type: 'G-EXE', text: `G-EXE: ${(() => {
+                    prefix: 'G-EXE:', value: (() => {
                       const cliente = demanda.cliente || "";
                       const map: Record<string, string> = {
                         "bradesco": "BRD",
@@ -279,27 +279,30 @@ export default function EditarDemandaPage() {
                       const local = demanda.local || "N/D";
                       const topico = demanda.topico || (demanda.obs ? demanda.obs.substring(0, 15) : "N/D");
                       return `${sigla} - ${local} - ${topico}`;
-                    })()}`
+                    })()
                   },
-                  { type: 'G-ADM', text: `G-ADM: ${demanda.numero} - ${demanda.local || "N/D"} - ${demanda.topico || (demanda.obs ? demanda.obs.substring(0, 15) : "N/D")}` }
-                ].map((grupo) => (
-                  <Box key={grupo.type} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <WhatsAppIcon sx={{ fontSize: 16, color: '#25D366' }} />
-                    <Typography variant="body2" sx={{ fontSize: 12, color: "text.secondary", bgcolor: "background.paper", px: 1, py: 0.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-                      {grupo.text}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        navigator.clipboard.writeText(grupo.text);
-                      }}
+                  { prefix: 'G-ADM:', value: `${demanda.numero} - ${demanda.local || "N/D"} - ${demanda.topico || (demanda.obs ? demanda.obs.substring(0, 15) : "N/D")}` }
+                ].map((grupo) => {
+                  const upperValue = grupo.value.toUpperCase();
+                  return (
+                    <Box key={grupo.prefix} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <WhatsAppIcon sx={{ fontSize: 16, color: '#25D366' }} />
+                      <Typography variant="body2" sx={{ fontSize: 12, color: "text.secondary", bgcolor: "background.paper", px: 1, py: 0.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                        {grupo.prefix} {upperValue}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          navigator.clipboard.writeText(upperValue);
+                        }}
                       title="Copiar nome do grupo"
                       sx={{ p: 0.5 }}
                     >
                       <ContentCopyIcon sx={{ fontSize: 14 }} />
                     </IconButton>
                   </Box>
-                ))}
+                );
+                })}
               </Box>
             )}
 
