@@ -77,36 +77,46 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
       {/* CONTEÚDO DO CARD */}
       <Box
         sx={{
-          p: 2,
+          p: { xs: 1.5, sm: 2 },
           flex: 1,
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "flex-start", sm: "center" },
-          gap: 2,
-          flexWrap: "wrap",
-          opacity: isCanceladaOuDeclinada ? 0.55 : 1, // 👈 Apaga o texto pela metade se for cancelada/declinada
+          alignItems: { xs: "stretch", sm: "center" },
+          gap: { xs: 1, sm: 2 },
+          opacity: isCanceladaOuDeclinada ? 0.55 : 1,
           transition: "opacity 0.2s",
         }}
       >
-        {/* CLIENTE E NÚMERO */}
-        <Box sx={{ flex: 1.5 }}>
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 800, color: isCanceladaOuDeclinada ? "text.secondary" : statusColor }}
-          >
-            #{demanda.numero}
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <BusinessIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {demanda.cliente}
+        {/* CABEÇALHO MOBILE / COLUNA 1 DESKTOP */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flex: { sm: 1.5 } }}>
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: isCanceladaOuDeclinada ? "text.secondary" : statusColor }}>
+              #{demanda.numero}
             </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <BusinessIcon sx={{ fontSize: 18, color: "text.secondary", display: { xs: 'none', sm: 'block' } }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {demanda.cliente}
+              </Typography>
+            </Box>
           </Box>
+
+          {/* SLA no canto direito superior (Mobile) / Fica na terceira coluna no Desktop */}
+          {isSlaAtrasado && (
+            <Chip 
+              icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
+              label={`${sla.diasOcioso} dias`}
+              sx={{ display: { xs: "flex", sm: "none" }, height: 22, fontSize: '0.7rem', fontWeight: 700, bgcolor: alpha("#d32f2f", 0.05) }}
+              size="small"
+              color="error"
+              variant="outlined"
+            />
+          )}
         </Box>
 
-        {/* LOCALIZAÇÃO */}
-        <Box sx={{ flex: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        {/* LOCALIZAÇÃO (COLUNA 2 DESKTOP) */}
+        <Box sx={{ flex: { sm: 2 } }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
             {demanda.local}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -117,22 +127,41 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
           </Box>
         </Box>
 
-        {/* VALOR FINANCEIRO */}
-        <Box sx={{ display: "flex", flexDirection:"column", alignItems: "flex-end", gap: 1, flex: 1 }}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+        {/* VALOR E CHIPS (COLUNA 3 DESKTOP / RODAPÉ MOBILE) */}
+        <Box sx={{ display: "flex", flexDirection: { xs: "row", sm: "column" }, justifyContent: "space-between", alignItems: { xs: "flex-end", sm: "flex-end" }, flexWrap: "wrap", gap: {xs: 1, sm: 1}, flex: { sm: 1.5 }, mt: { xs: 0.5, sm: 0 } }}>
+          
+          {/* LINHA 1 DESKTOP / DIREITA MOBILE */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, order: { xs: 1, sm: 1 } }}>
+            {/* SLA apenas Desktop (Fica do lado do Valor) */}
+            {isSlaAtrasado && (
+              <Chip 
+                icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
+                label={`${sla.diasOcioso} dias`}
+                size="small"
+                color="error"
+                variant="outlined"
+                sx={{ display: { xs: "none", sm: "flex" }, fontWeight: 700, bgcolor: alpha("#d32f2f", 0.05), height: 24, fontSize: '0.75rem' }}
+              />
+            )}
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: { xs: '0.95rem', sm: '0.95rem' } }}>
+              {(demanda.valor || 0).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </Typography>
+          </Box>
+
+          {/* LINHA 2 DESKTOP / ESQUERDA MOBILE */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: "wrap", order: { xs: 2, sm: 2 }, justifyContent: "flex-end" }}>
             {isParcialmenteFaturado && (
               <Tooltip title={`Falta faturar: ${(faltaFaturar).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`}>
                 <Chip
-                  icon={<WarningIcon sx={{ fontSize: '16px !important' }} />}
+                  icon={<WarningIcon sx={{ fontSize: '14px !important' }} />}
                   label="Fat. Parcial"
                   size="small"
                   color="warning"
                   variant="outlined"
-                  sx={{
-                    fontWeight: 800,
-                    borderRadius: 1,
-                    bgcolor: alpha("#ed6c02", 0.05)
-                  }}
+                  sx={{ fontWeight: 800, borderRadius: 1, bgcolor: alpha("#ed6c02", 0.05), height: 24, fontSize: '0.7rem' }}
                 />
               </Tooltip>
             )}
@@ -144,30 +173,9 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
                 color: isCanceladaOuDeclinada ? "text.secondary" : statusColor,
                 fontWeight: 800,
                 borderRadius: 1,
+                height: 24, fontSize: '0.7rem'
               }}
             />
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-              {(demanda.valor || 0).toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </Typography>
-            {isSlaAtrasado && (
-              <Chip 
-                icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
-                label={`${sla.diasOcioso} dias sem atualização`}
-                size="small"
-                color="error"
-                variant="outlined"
-                sx={{ 
-                  fontWeight: 700, 
-                  mt: 0.5,
-                  bgcolor: alpha("#d32f2f", 0.05)
-                }}
-              />
-            )}
           </Box>
         </Box>
       </Box>

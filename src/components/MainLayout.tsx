@@ -3,6 +3,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
+import BottomNavigation from './BottomNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { redirect, usePathname } from 'next/navigation';
 
@@ -21,7 +22,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <Box sx={{ display: 'flex' }}>
       <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <BottomNavigation />
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 3, 
+          pb: { xs: 12, md: 3 }, // Espaço no rodapé para não cobrir pela BottomNavigation flutuante
+          bgcolor: 'background.default', 
+          minHeight: '100vh' 
+        }}
+      >
         {children}
       </Box>
     </Box>

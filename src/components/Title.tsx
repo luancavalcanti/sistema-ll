@@ -7,8 +7,8 @@ interface TitleProps {
 
 export default function Title({ title, subtitle }: TitleProps) {
   return (
-    <Box sx={{display: "flex", justifyContent: {xs: "flex-end", sm: "flex-start"}, flexDirection: "column", alignItems: {xs: "flex-end", sm: "flex-start"}}}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: "primary.main", ml:{xs: 5, sm:5, md:0} }}>
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left" }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: "primary.main" }}>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">

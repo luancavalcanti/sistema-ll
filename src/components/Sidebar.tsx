@@ -43,7 +43,6 @@ export default function Sidebar() {
   const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
-  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
   // 2. Efeitos
@@ -58,10 +57,8 @@ export default function Sidebar() {
       setIsCollapsed(false);
     } else if (isTablet) {
       setIsCollapsed(true);
-      setMobileOpen(false);
     } else if (isDesktop) {
       setIsCollapsed(false);
-      setMobileOpen(false);
     }
   }, [isMobile, isTablet, isDesktop, mounted]);
 
@@ -72,9 +69,6 @@ export default function Sidebar() {
 
   const handleNavigation = (path: string) => {
     router.push(path);
-    if (isMobile) {
-      setMobileOpen(false);
-    }
   };
 
   const handleLogout = async () => {
@@ -106,18 +100,8 @@ export default function Sidebar() {
             />
           </Box>
         )}
-        <IconButton
-          onClick={() =>
-            isMobile ? setMobileOpen(false) : setIsCollapsed(!isCollapsed)
-          }
-        >
-          {isMobile ? (
-            <ChevronLeftIcon />
-          ) : isCollapsed ? (
-            <MenuIcon />
-          ) : (
-            <ChevronLeftIcon />
-          )}
+        <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
+          {isCollapsed ? <MenuIcon /> : <ChevronLeftIcon />}
         </IconButton>
       </Toolbar>
 
@@ -325,41 +309,14 @@ export default function Sidebar() {
 
   return (
     <>
-      <IconButton
-        color="inherit"
-        onClick={() => setMobileOpen(true)}
-        sx={{
-          display: { xs: "flex", md: "none" },
-          position: "fixed",
-          top: 16,
-          left: 16,
-          zIndex: 1200,
-          bgcolor: "primary.main",
-          color: "white",
-          boxShadow: 3,
-          "&:hover": { bgcolor: "primary.dark" },
-        }}
-      >
-        <MenuIcon />
-      </IconButton>
-
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ 
+          width: { md: drawerWidth }, 
+          flexShrink: { md: 0 },
+          display: { xs: "none", md: "block" } // Esconde o nav inteiro no mobile, pois o BottomNavigation fará esse papel
+        }}
       >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: 260 },
-          }}
-        >
-          {conteudoMenu}
-        </Drawer>
-
         <Drawer
           variant="permanent"
           sx={{

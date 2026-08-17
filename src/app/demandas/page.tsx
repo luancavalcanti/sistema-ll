@@ -147,7 +147,7 @@ export default function DemandasPage() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: "lg", mx: "auto", pb: 5 }}>
       {/* CABEÇALHO */}
-      <Box sx={{ display: "flex", justifyContent: {xs: "flex-end", sm: "space-between"}, alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
         <Title title="Demandas" subtitle="Gerenciamento de ordens de serviço - LL Engenharia" />
         {role !== "user" && (
           <Button

@@ -379,7 +379,7 @@ export default function MovimentoPage() {
       <Box
         sx={{
           display: "flex",
-          justifyContent: { xs: "flex-end", sm: "space-between" },
+          justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: 2,
