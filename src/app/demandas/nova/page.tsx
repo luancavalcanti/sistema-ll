@@ -47,6 +47,8 @@ export default function NovaDemandaPage() {
     uf: "",
     cidade: "",
     obs: "",
+    topico: "",
+    notas: "",
     valor: "",
   });
 
@@ -333,19 +335,42 @@ export default function NovaDemandaPage() {
           </TextField>
         </Box>
 
+        <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
+          <TextField
+            fullWidth
+            label="Local (Endereço/Agência)"
+            name="local"
+            value={demanda.local}
+            onChange={handleChange}
+            sx={{ flex: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Tópico (Resumo)"
+            name="topico"
+            value={demanda.topico}
+            onChange={handleChange}
+            sx={{ flex: 1 }}
+            inputProps={{ maxLength: 15 }}
+            helperText="Máx. 15 caracteres"
+          />
+        </Box>
+
         <TextField
           fullWidth
-          label="Local (Endereço/Agência)"
-          name="local"
-          value={demanda.local}
+          label="Escopo"
+          name="obs"
+          value={demanda.obs}
           onChange={handleChange}
+          multiline
+          rows={3}
         />
 
         <TextField
           fullWidth
-          label="Descrição / Observações"
-          name="obs"
-          value={demanda.obs}
+          label="Notas Adicionais"
+          name="notas"
+          value={demanda.notas}
           onChange={handleChange}
           multiline
           rows={3}

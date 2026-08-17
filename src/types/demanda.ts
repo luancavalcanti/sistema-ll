@@ -17,6 +17,8 @@ export interface IDemanda {
   gestao: number;
   apoio: number;
   obs?: string;
+  topico?: string;
+  notas?: string;
   criadoEm?: string;
   atualizado_em?: string;
   faturamento?: IFaturamento[];

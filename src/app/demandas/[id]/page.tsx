@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Box, Button, CircularProgress, Dialog, DialogTitle, DialogContent, 
-  DialogActions, TextField, IconButton, Typography, Chip, alpha 
+import {
+  Box, Button, CircularProgress, Dialog, DialogTitle, DialogContent,
+  DialogActions, TextField, IconButton, Typography, Chip, alpha
 } from "@mui/material";
-import { 
-  Save as SaveIcon, ArrowBack as ArrowBackIcon, Edit as EditIcon 
+import {
+  Save as SaveIcon, ArrowBack as ArrowBackIcon, Edit as EditIcon,
+  ContentCopy as ContentCopyIcon, WhatsApp as WhatsAppIcon
 } from "@mui/icons-material";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,10 +37,10 @@ export default function EditarDemandaPage() {
   const [faturamentos, setFaturamentos] = useState<IFaturamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   const [ufs, setUfs] = useState<{ sigla: string; nome: string }[]>([]);
   const [cidades, setCidades] = useState<{ nome: string }[]>([]);
-  
+
   const [movimentosDemanda, setMovimentosDemanda] = useState<IMovimento[]>([]);
   const [loadingFinanceiro, setLoadingFinanceiro] = useState(true);
   const [ultimaDataAtualizacao, setUltimaDataAtualizacao] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function EditarDemandaPage() {
       if (!numeroDemandaDaURL) return;
       try {
         const dadosDemanda = await buscarDemandaPorNumero(numeroDemandaDaURL);
-        
+
         if (dadosDemanda) {
           setDemanda(dadosDemanda);
           const dadosFaturamento = await buscarFaturamentosPorDemanda(numeroDemandaDaURL);
@@ -70,7 +71,7 @@ export default function EditarDemandaPage() {
         setLoading(false);
       }
     };
-    
+
     fetchDadosDaDemanda();
   }, [numeroDemandaDaURL]);
 
@@ -120,16 +121,16 @@ export default function EditarDemandaPage() {
   // Handlers de Faturamento
   const addFaturamento = () => {
     setFaturamentos([
-      ...faturamentos, 
-      { 
-        id: `temp-${Date.now()}`, 
+      ...faturamentos,
+      {
+        id: `temp-${Date.now()}`,
         demandaId: numeroDemandaDaURL,
-        nota_fiscal: "", 
-        valor_fat: 0, 
-        valor_cred: 0, 
-        data_fat: "", 
-        data_cred: "", 
-        cancelada: false 
+        nota_fiscal: "",
+        valor_fat: 0,
+        valor_cred: 0,
+        data_fat: "",
+        data_cred: "",
+        cancelada: false
       }
     ]);
   };
@@ -153,7 +154,7 @@ export default function EditarDemandaPage() {
       setErroNumero("O número precisa ter pelo menos 3 dígitos.");
       return;
     }
-    
+
     // Se o número for igual ao atual, apenas fecha o modal
     if (novoNumeroTemp === String(demanda.numero)) {
       setOpenModalNumero(false);
@@ -180,7 +181,7 @@ export default function EditarDemandaPage() {
       // Se passou, atualiza o estado local (será salvo de verdade no handleSave final)
       setDemanda(prev => ({ ...prev, numero: Number(novoNumeroTemp) }));
       setOpenModalNumero(false);
-      
+
     } catch (err) {
       console.error("Erro ao validar número:", err);
       setErroNumero("Erro ao validar. Tente novamente.");
@@ -194,7 +195,7 @@ export default function EditarDemandaPage() {
   const valorTotalFaturado = faturamentos.reduce((acc, fat) => acc + (Number(fat.valor_fat) || 0), 0);
   const diferencaFaturamento = valorTotalDemanda - valorTotalFaturado;
   const is100Porcento = valorTotalDemanda > 0 && diferencaFaturamento <= 0;
-  
+
   const totalDespesas = movimentosDemanda.filter((m) => Number(m.valor) < 0).reduce((acc, m) => acc + Number(m.valor), 0);
   const saldoDemanda = valorTotalFaturado + totalDespesas;
 
@@ -207,7 +208,7 @@ export default function EditarDemandaPage() {
       // ou garantimos que a função de atualizar procure pelo ID interno do banco se houver.
       // Se a sua URL/API espera o numeroDaURL original para achar o registro, passe ele:
       await atualizarDemanda(numeroDemandaDaURL, demanda, faturamentos);
-      
+
       // Se o número mudou, redireciona para a nova URL correspondente
       if (String(demanda.numero) !== numeroDemandaDaURL) {
         router.push(`/demandas/${demanda.numero}`);
@@ -227,49 +228,102 @@ export default function EditarDemandaPage() {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: 1000, mx: "auto", pb: 5 }}>
       {/* CABEÇALHO */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button variant="outlined" onClick={() => router.back()} sx={{ minWidth: "auto", p: 1 }}>
-            <ArrowBackIcon />
-          </Button>
-          
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+
+          {/* LINHA SUPERIOR: Botão Voltar + Título Principal + Botão Editar */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Button variant="outlined" onClick={() => router.back()} sx={{ minWidth: "auto", p: 1, borderRadius: 2 }}>
+              <ArrowBackIcon />
+            </Button>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              <Title title={`Demanda ${demanda.numero}`} subtitle="Gerencie as informações financeiras desta demanda" />
-              {demanda.status && (() => {
-                const sla = calcularSLA(demanda.status, demanda.atualizado_em || demanda.criadoEm);
-                if (sla.atrasada) {
-                  return (
-                    <Chip 
-                      icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
-                      label={`${sla.diasOcioso} dias sem atualização`}
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      sx={{ 
-                        fontWeight: 700, 
-                        bgcolor: alpha("#d32f2f", 0.05),
-                        alignSelf: "flex-start",
-                        mt: 0.5
-                      }}
-                    />
-                  );
-                }
-                return null;
-              })()}
+              <Typography sx={{ fontWeight: 400, color: "primary.main", lineHeight: 1 }}>
+                Demanda
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main", lineHeight: 1 }}>
+                {demanda.numero}
+              </Typography>
             </Box>
+
             {role === "admin" && (
-              <IconButton 
-                size="small" 
-                color="primary" 
+              <IconButton
+                size="small"
+                color="primary"
                 onClick={() => {
                   setNovoNumeroTemp(String(demanda.numero));
                   setOpenModalNumero(true);
                 }}
-                sx={{ mt: -2 }} // Ajuste fino para alinhar com o Título
               >
                 <EditIcon fontSize="small" />
               </IconButton>
             )}
+          </Box>
+
+          {/* INFORMAÇÕES SECUNDÁRIAS: Subtítulo, SLA e Grupos */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            {/* Grupos do WhatsApp */}
+            {demanda.numero && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mt: 1 }}>
+                {[
+                  {
+                    type: 'G-EXE', text: `G-EXE: ${(() => {
+                      const cliente = demanda.cliente || "";
+                      const map: Record<string, string> = {
+                        "bradesco": "BRD",
+                        "santander": "STD",
+                        "itaú": "ITA",
+                        "itau": "ITA",
+                        "crefisa": "CRF"
+                      };
+                      const normalized = cliente.toLowerCase().trim();
+                      const sigla = map[normalized] || cliente.substring(0, 3).toUpperCase();
+                      const local = demanda.local || "N/D";
+                      const topico = demanda.topico || (demanda.obs ? demanda.obs.substring(0, 15) : "N/D");
+                      return `${sigla} - ${local} - ${topico}`;
+                    })()}`
+                  },
+                  { type: 'G-ADM', text: `G-ADM: ${demanda.numero} - ${demanda.local || "N/D"} - ${demanda.topico || (demanda.obs ? demanda.obs.substring(0, 15) : "N/D")}` }
+                ].map((grupo) => (
+                  <Box key={grupo.type} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <WhatsAppIcon sx={{ fontSize: 16, color: '#25D366' }} />
+                    <Typography variant="body2" sx={{ fontSize: 12, color: "text.secondary", bgcolor: "background.paper", px: 1, py: 0.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                      {grupo.text}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        navigator.clipboard.writeText(grupo.text);
+                      }}
+                      title="Copiar nome do grupo"
+                      sx={{ p: 0.5 }}
+                    >
+                      <ContentCopyIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+
+            {demanda.status && (() => {
+              const sla = calcularSLA(demanda.status, demanda.atualizado_em || demanda.criadoEm);
+              if (sla.atrasada) {
+                return (
+                  <Chip
+                    icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
+                    label={`${sla.diasOcioso} dias sem atualização`}
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: alpha("#d32f2f", 0.05),
+                      alignSelf: "flex-start",
+                      mt: 0.5
+                    }}
+                  />
+                );
+              }
+              return null;
+            })()}
           </Box>
         </Box>
 
@@ -299,9 +353,9 @@ export default function EditarDemandaPage() {
           <Button onClick={() => setOpenModalNumero(false)} color="inherit" disabled={validandoNumero}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleMudarNumero} 
-            variant="contained" 
+          <Button
+            onClick={handleMudarNumero}
+            variant="contained"
             disabled={validandoNumero || !novoNumeroTemp}
             startIcon={validandoNumero ? <CircularProgress size={16} color="inherit" /> : null}
           >
@@ -314,18 +368,18 @@ export default function EditarDemandaPage() {
       <InformacoesBasicas demanda={demanda} handleChange={handleChange} ufs={ufs} cidades={cidades} role={role} />
 
       {!["Nova", "Proposta"].includes(demanda.status || "") && (
-        <Faturamento 
-          faturamentos={faturamentos} addFaturamento={addFaturamento} updateFaturamento={updateFaturamento} 
-          cancelarFaturamento={cancelarFaturamento} removerFaturamento={removerFaturamento} 
-          valorTotalDemanda={valorTotalDemanda} valorTotalFaturado={valorTotalFaturado} 
-          diferencaFaturamento={diferencaFaturamento} is100Porcento={is100Porcento} 
+        <Faturamento
+          faturamentos={faturamentos} addFaturamento={addFaturamento} updateFaturamento={updateFaturamento}
+          cancelarFaturamento={cancelarFaturamento} removerFaturamento={removerFaturamento}
+          valorTotalDemanda={valorTotalDemanda} valorTotalFaturado={valorTotalFaturado}
+          diferencaFaturamento={diferencaFaturamento} is100Porcento={is100Porcento}
         />
       )}
 
       {!["Nova", "Proposta"].includes(demanda.status || "") && role !== "user" && (
-        <ResumoFinanceiro 
-          loadingFinanceiro={loadingFinanceiro} movimentosDemanda={movimentosDemanda} 
-          totalDespesas={totalDespesas} valorTotalFaturado={valorTotalFaturado} saldoDemanda={saldoDemanda} 
+        <ResumoFinanceiro
+          loadingFinanceiro={loadingFinanceiro} movimentosDemanda={movimentosDemanda}
+          totalDespesas={totalDespesas} valorTotalFaturado={valorTotalFaturado} saldoDemanda={saldoDemanda}
           ultimaDataAtualizacao={ultimaDataAtualizacao}
         />
       )}

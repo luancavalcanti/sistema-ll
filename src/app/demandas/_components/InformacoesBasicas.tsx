@@ -73,7 +73,11 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
             <MenuItem key={c.nome} value={c.nome}>{c.nome}</MenuItem>
           ))}
         </TextField>
-        <TextField sx={{ flex: 1 }} label="Local (Agência/Endereço)" name="local" value={demanda.local || ""} onChange={handleChange} />
+      </Box>
+
+      <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
+        <TextField sx={{ flex: 2 }} label="Local (Agência/Endereço)" name="local" value={demanda.local || ""} onChange={handleChange} />
+        <TextField sx={{ flex: 1 }} label="Tópico (Resumo)" name="topico" value={demanda.topico || ""} onChange={handleChange} inputProps={{ maxLength: 15 }} helperText="Máx. 15 caracteres" />
       </Box>
 
       <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
@@ -104,7 +108,9 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
         )}
       </Box>
 
-      <TextField fullWidth multiline rows={2} label="Observações / Descrição" name="obs" value={demanda.obs || ""} onChange={handleChange} />
+      <TextField fullWidth multiline rows={3} label="Escopo" name="obs" value={demanda.obs || ""} onChange={handleChange} />
+
+      <TextField fullWidth multiline rows={3} label="Notas Adicionais" name="notas" value={demanda.notas || ""} onChange={handleChange} />
     </Paper>
   );
 }
