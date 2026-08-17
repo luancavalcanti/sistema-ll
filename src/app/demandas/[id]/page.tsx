@@ -257,17 +257,19 @@ export default function EditarDemandaPage() {
                 return null;
               })()}
             </Box>
-            <IconButton 
-              size="small" 
-              color="primary" 
-              onClick={() => {
-                setNovoNumeroTemp(String(demanda.numero));
-                setOpenModalNumero(true);
-              }}
-              sx={{ mt: -2 }} // Ajuste fino para alinhar com o Título
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
+            {role === "admin" && (
+              <IconButton 
+                size="small" 
+                color="primary" 
+                onClick={() => {
+                  setNovoNumeroTemp(String(demanda.numero));
+                  setOpenModalNumero(true);
+                }}
+                sx={{ mt: -2 }} // Ajuste fino para alinhar com o Título
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </Box>
 
