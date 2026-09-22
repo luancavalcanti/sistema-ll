@@ -107,6 +107,15 @@ export default function BottomNavigation() {
       <MuiBottomNavigation
         showLabels
         value={bottomValue >= 0 ? bottomValue : false}
+        sx={{
+          bgcolor: "#242424", // Fundo escuro
+          "& .MuiBottomNavigationAction-root": {
+            color: "rgba(255, 255, 255, 0.6)", // Cor dos ícones não selecionados
+          },
+          "& .Mui-selected": {
+            color: "#ffffff", // Cor do ícone selecionado
+          },
+        }}
       >
         {fixedItems.map((item, index) => (
           <BottomNavigationAction

@@ -42,6 +42,7 @@ export default function EditarDemandaPage() {
   const [cidades, setCidades] = useState<{ nome: string }[]>([]);
 
   const [movimentosDemanda, setMovimentosDemanda] = useState<IMovimento[]>([]);
+  const [contasEmAberto, setContasEmAberto] = useState<any[]>([]);
   const [loadingFinanceiro, setLoadingFinanceiro] = useState(true);
   const [ultimaDataAtualizacao, setUltimaDataAtualizacao] = useState<string | null>(null);
 
@@ -94,12 +95,14 @@ export default function EditarDemandaPage() {
     const fetchMovimentos = async () => {
       if (!numeroDemandaDaURL) return;
       try {
-        const [movimentos, ultimaData] = await Promise.all([
+        const [movimentos, ultimaData, { data: contasData }] = await Promise.all([
           buscarMovimentosDaDemanda(numeroDemandaDaURL),
-          obterUltimaDataMovimento()
+          obterUltimaDataMovimento(),
+          supabase.from("contas_a_pagar").select("*").eq("demanda_numero", numeroDemandaDaURL).eq("status", "Pendente")
         ]);
         setMovimentosDemanda(movimentos || []);
         setUltimaDataAtualizacao(ultimaData);
+        setContasEmAberto(contasData || []);
       } catch (error) {
         console.error("Erro ao carregar financeiro", error);
       } finally {
@@ -196,7 +199,8 @@ export default function EditarDemandaPage() {
   const diferencaFaturamento = valorTotalDemanda - valorTotalFaturado;
   const is100Porcento = valorTotalDemanda > 0 && diferencaFaturamento <= 0;
 
-  const totalDespesas = movimentosDemanda.filter((m) => Number(m.valor) < 0).reduce((acc, m) => acc + Number(m.valor), 0);
+  const totalBoletosEmAberto = contasEmAberto.reduce((acc, c) => acc + Number(c.valor || 0), 0);
+  const totalDespesas = movimentosDemanda.filter((m) => Number(m.valor) < 0).reduce((acc, m) => acc + Number(m.valor), 0) - totalBoletosEmAberto;
   const saldoDemanda = valorTotalFaturado + totalDespesas;
 
   // 4. Salvar Alterações
@@ -383,7 +387,7 @@ export default function EditarDemandaPage() {
         <ResumoFinanceiro
           loadingFinanceiro={loadingFinanceiro} movimentosDemanda={movimentosDemanda}
           totalDespesas={totalDespesas} valorTotalFaturado={valorTotalFaturado} saldoDemanda={saldoDemanda}
-          ultimaDataAtualizacao={ultimaDataAtualizacao}
+          ultimaDataAtualizacao={ultimaDataAtualizacao} contasEmAberto={contasEmAberto} totalBoletosEmAberto={totalBoletosEmAberto}
         />
       )}
     </Box>

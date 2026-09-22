@@ -8,9 +8,11 @@ interface ResumoFinanceiroProps {
   valorTotalFaturado: number;
   saldoDemanda: number;
   ultimaDataAtualizacao?: string | null;
+  contasEmAberto?: any[];
+  totalBoletosEmAberto?: number;
 }
 
-export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda, totalDespesas, valorTotalFaturado, saldoDemanda, ultimaDataAtualizacao }: ResumoFinanceiroProps) {
+export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda, totalDespesas, valorTotalFaturado, saldoDemanda, ultimaDataAtualizacao, contasEmAberto = [], totalBoletosEmAberto = 0 }: ResumoFinanceiroProps) {
   return (
     <Box sx={{ mt: 5, display: "flex", flexDirection: "column", gap: 2 }}>
       <Box>
@@ -56,6 +58,47 @@ export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda,
             </Paper>
           </Box>
 
+          {contasEmAberto.length > 0 && (
+            <>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "warning.main", mt: 2 }}>
+                Valores Pendentes (Contas a Pagar)
+              </Typography>
+              <Paper sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid #ff9800", mb: 2 }}>
+                <List disablePadding>
+                  {contasEmAberto.map((conta, index) => {
+                    const dataFormatada = conta.data_vencimento ? conta.data_vencimento.split("-").reverse().join("/") : "";
+                    return (
+                      <React.Fragment key={conta.id}>
+                        <ListItem sx={{ py: 2, px: 3, display: "flex", flexWrap: "wrap", gap: 2, "&:hover": { bgcolor: "#fff3e0" }, bgcolor: "#fff8e1" }}>
+                          <Box sx={{ flex: 1, minWidth: "200px" }}>
+                            <Typography variant="subtitle2" fontWeight="600">{conta.fornecedor}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Vencimento: {dataFormatada} {conta.observacao ? `• ${conta.observacao}` : ""}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: "right", minWidth: "120px" }}>
+                            <Typography variant="body2" fontWeight="600" color="error.main">
+                              - {Number(conta.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </Typography>
+                            <Typography variant="caption" color="warning.main" display="block">
+                              Aguardando Baixa
+                            </Typography>
+                          </Box>
+                        </ListItem>
+                        {index < contasEmAberto.length - 1 && <Divider />}
+                      </React.Fragment>
+                    );
+                  })}
+                </List>
+              </Paper>
+            </>
+          )}
+
+          {movimentosDemanda.length > 0 && (
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "text.primary", mt: contasEmAberto.length > 0 ? 0 : 2 }}>
+              Movimentações Financeiras
+            </Typography>
+          )}
           <Paper sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid #e0e0e0" }}>
             <List disablePadding>
               {movimentosDemanda.map((mov, index) => {
