@@ -225,18 +225,9 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
         transition: "background-color 0.2s",
       }}
     >
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          minWidth: "150px",
-        }}
-      >
-        <Box sx={{ display: { sm: "none", md: "flex" } }}>
-           {/* 👇 Botão clicável no lugar do ícone estático */}
-           <Tooltip title={(!nota.nota_fiscal || !nota.codigo_verificacao) ? "Código/Chave ausente" : "Visualizar Nota Fiscal"}>
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, flex: 2 }}>
+        <Box sx={{ display: { xs: "none", md: "flex" }, mt: 0.5 }}>
+          <Tooltip title={(!nota.nota_fiscal || !nota.codigo_verificacao) ? "Código/Chave ausente" : "Visualizar Nota Fiscal"}>
             <span>
               <IconButton 
                 color="primary" 
@@ -249,29 +240,26 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
             </span>
           </Tooltip>
         </Box>
-        <Box>
-          <Typography variant="body2" color="text.secondary" fontWeight="bold">
-            NF
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          <Typography variant="subtitle1" fontWeight="700" lineHeight={1.2} mb={0.5}>
+            NF {nota.nota_fiscal} • Demanda {nota.demandaId || "---"}
           </Typography>
-          <Typography variant="subtitle1" fontWeight="600" lineHeight={1}>
-            {nota.nota_fiscal}
+          <Typography variant="body2" color="text.secondary">
+            Emitida em: {dataFatFormatada}
+            {nota.codigo_verificacao && (
+              <span style={{ marginLeft: 8 }}>| Cód: {nota.codigo_verificacao}</span>
+            )}
           </Typography>
+          {isPaga ? (
+            <Typography variant="body2" color="success.main" fontWeight="bold" mt={0.5}>
+              Creditado em: {String(nota.data_cred || "").split("-").reverse().join("/")}
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="warning.main" fontWeight="bold" mt={0.5}>
+              Aguardando Pagamento
+            </Typography>
+          )}
         </Box>
-      </Box>
-      
-      <Box sx={{ flex: 2, display: "flex", flexDirection: "column" }}>
-        <Typography variant="subtitle1" fontWeight="700">
-          Demanda {nota.demandaId || "---"}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Emitida em: {dataFatFormatada}
-        </Typography>
-        {/* Mostra o código de verificação embaixo da data na listagem */}
-        {nota.codigo_verificacao && (
-          <Typography variant="caption" sx={{ color: "text.disabled", display: { xs: "none", sm: "none", md: "block" } }}>
-            Cód: {nota.codigo_verificacao}
-          </Typography>
-        )}
       </Box>
       
       <Box
@@ -280,34 +268,27 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
           display: "flex",
           flexDirection: "column",
           alignItems: { xs: "flex-start", sm: "flex-end" },
-          minWidth: "120px",
-          gap: 1,
+          minWidth: "150px",
         }}
       >
-        {isPaga ? (
-          <Chip
-            icon={<PaidIcon />}
-            label={`${String(nota.data_cred || "").split("-").reverse().join("/")}`}
-            size="small"
-            color="success"
-            variant="outlined"
-            sx={{ fontWeight: "bold" }}
-          />
-        ) : (
-          <Chip
-            icon={<PendingIcon />}
-            label="Aguardando Pagamento"
-            size="small"
-            color="warning"
-            sx={{ fontWeight: "bold" }}
-          />
-        )}
         <Typography variant="h6" fontWeight="800" color="primary.main">
-          {valorFat.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          })}
+          {valorFat.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </Typography>
+        {isPaga && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight="600">
+              Creditado: {valorCred.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </Typography>
+            {valorCred < valorFat && valorFat > 0 && (
+              <Chip
+                label={`-${(((valorFat - valorCred) / valorFat) * 100).toFixed(1)}%`}
+                size="small"
+                color="error"
+                sx={{ height: 20, fontSize: "0.7rem", fontWeight: "bold" }}
+              />
+            )}
+          </Box>
+        )}
       </Box>
     </Paper>
   );

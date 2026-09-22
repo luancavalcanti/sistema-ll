@@ -1,17 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
-  Paper, Typography, Box, Button, TextField, IconButton, Alert, Tooltip 
+  Paper, Typography, Box, Button, TextField, IconButton, Alert, Tooltip, CircularProgress
 } from "@mui/material";
 import { 
   Add as AddIcon, 
   Block as BlockIcon, 
   Delete as DeleteIcon,
-  Receipt as ReceiptIcon 
+  Receipt as ReceiptIcon,
+  Save as SaveIcon
 } from "@mui/icons-material";
 
 // 👇 Importando o type oficial 
 import { IFaturamento } from "@/types/faturamento"; 
 import { useAuth } from "@/contexts/AuthContext";
+import { sincronizarFaturamentoDaDemanda } from "@/services/faturamentosService";
 
 interface FaturamentoProps {
   faturamentos: IFaturamento[];
@@ -30,6 +32,20 @@ export default function Faturamento({
   valorTotalDemanda, valorTotalFaturado, diferencaFaturamento, is100Porcento
 }: FaturamentoProps) {
   const { isUser } = useAuth();
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const salvarNotaFiscal = async (fat: IFaturamento) => {
+    if (!fat.demandaId) return;
+    setSavingId(fat.id as string);
+    try {
+      // Salva todo o faturamento da demanda mantendo a consistência do estado atual
+      await sincronizarFaturamentoDaDemanda(fat.demandaId, faturamentos);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   // --- MÁSCARA INTELIGENTE PARA O GRID ---
   const handleCurrencyChange = (id: string, field: string, value: string) => {
@@ -108,6 +124,20 @@ export default function Faturamento({
               
               {/* BOTÕES DE AÇÃO */}
               <Box>
+                {!isUser && !fat.cancelada && (
+                  <Tooltip title="Salvar alterações na nota fiscal">
+                    <span>
+                      <IconButton 
+                        color="success" 
+                        onClick={() => salvarNotaFiscal(fat)} 
+                        disabled={savingId === fat.id}
+                      >
+                        {savingId === fat.id ? <CircularProgress size={20} color="inherit" /> : <SaveIcon fontSize="small" />}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
+
                 <Tooltip title={(!fat.nota_fiscal || !fat.codigo_verificacao) ? "Preencha a nota e o código para visualizar" : "Visualizar Nota Fiscal"}>
                   <span> {/* Span necessário para o Tooltip funcionar em botões desabilitados */}
                     <IconButton 
