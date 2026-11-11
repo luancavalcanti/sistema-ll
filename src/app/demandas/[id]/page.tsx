@@ -180,9 +180,10 @@ export default function EditarDemandaPage() {
   // Handlers do Formulário
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const valorFinal = name === "topico" ? value.toUpperCase() : value;
     setDemanda((prev) => {
-      if (name === "uf") return { ...prev, uf: value, cidade: "" };
-      return { ...prev, [name]: value };
+      if (name === "uf") return { ...prev, uf: valorFinal, cidade: "" };
+      return { ...prev, [name]: valorFinal };
     });
   };
 

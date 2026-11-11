@@ -69,10 +69,11 @@ export default function NovaDemandaPage() {
   // Handler genérico para textos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const valorFinal = name === "topico" ? value.toUpperCase() : value;
     if (name === "uf") {
-      setDemanda((prev) => ({ ...prev, uf: value, cidade: "" }));
+      setDemanda((prev) => ({ ...prev, uf: valorFinal, cidade: "" }));
     } else {
-      setDemanda((prev) => ({ ...prev, [name]: value }));
+      setDemanda((prev) => ({ ...prev, [name]: valorFinal }));
     }
   };
 
@@ -317,10 +318,10 @@ export default function NovaDemandaPage() {
             fullWidth
             label="Tópico (Resumo)"
             name="topico"
-            value={demanda.topico}
+            value={(demanda.topico || "").toUpperCase()}
             onChange={handleChange}
             sx={{ flex: 1 }}
-            inputProps={{ maxLength: 15 }}
+            inputProps={{ maxLength: 15, style: { textTransform: "uppercase" } }}
             helperText="Máx. 15 caracteres"
           />
         </Box>
