@@ -42,6 +42,19 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
     });
   };
 
+  const ufAtual = demanda.uf || "";
+  const cidadeAtual = demanda.cidade || "";
+
+  const opcoesUfs =
+    ufAtual && !ufs.some((u) => u.sigla === ufAtual)
+      ? [{ sigla: ufAtual, nome: ufAtual }, ...ufs]
+      : ufs;
+
+  const opcoesCidades =
+    cidadeAtual && !cidades.some((c) => c.nome === cidadeAtual)
+      ? [{ nome: cidadeAtual }, ...cidades]
+      : cidades;
+
   return (
     <Paper sx={{ p: 4, borderRadius: 3, display: "flex", flexDirection: "column", gap: 3 }}>
       <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
@@ -98,13 +111,13 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
       </Box>
 
       <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
-        <TextField sx={{ flex: 1 }} select label="UF" name="uf" value={demanda.uf || ""} onChange={handleChange}>
-          {ufs.map((u) => (
+        <TextField sx={{ flex: 1 }} select label="UF" name="uf" value={ufAtual} onChange={handleChange}>
+          {opcoesUfs.map((u) => (
             <MenuItem key={u.sigla} value={u.sigla}>{u.sigla} - {u.nome}</MenuItem>
           ))}
         </TextField>
-        <TextField sx={{ flex: 1 }} select label="Cidade" name="cidade" value={demanda.cidade || ""} onChange={handleChange} disabled={!demanda.uf}>
-          {cidades.map((c) => (
+        <TextField sx={{ flex: 1 }} select label="Cidade" name="cidade" value={cidadeAtual} onChange={handleChange} disabled={!ufAtual}>
+          {opcoesCidades.map((c) => (
             <MenuItem key={c.nome} value={c.nome}>{c.nome}</MenuItem>
           ))}
         </TextField>

@@ -24,16 +24,9 @@ import {
   criarDemanda,
 } from "@/services/demandasService";
 import { supabase } from "@/lib/supabase";
+import { UFS_BRASIL, obterCidadesPorUF } from "@/utils/localidades";
 
 export const dynamic = "force-dynamic";
-// Tipos para a API do IBGE
-interface IBGEUF {
-  sigla: string;
-  nome: string;
-}
-interface IBGECidade {
-  nome: string;
-}
 
 export default function NovaDemandaPage() {
   const router = useRouter();
@@ -55,8 +48,8 @@ export default function NovaDemandaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [ufs, setUfs] = useState<IBGEUF[]>([]);
-  const [cidades, setCidades] = useState<IBGECidade[]>([]);
+  const ufs = UFS_BRASIL;
+  const cidades = obterCidadesPorUF(demanda.uf);
 
   // 1. Busca o próximo número da demanda (VIA SERVIÇO)
   useEffect(() => {
@@ -72,30 +65,6 @@ export default function NovaDemandaPage() {
     };
     fetchProximoNumero();
   }, []);
-
-  // 2. Busca UFs
-  useEffect(() => {
-    fetch(
-      "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome",
-    )
-      .then((res) => res.json())
-      .then((data) => setUfs(data))
-      .catch((err) => console.error("Erro ao buscar UFs:", err));
-  }, []);
-
-  // 3. Busca Cidades
-  useEffect(() => {
-    if (!demanda.uf) {
-      setCidades([]);
-      return;
-    }
-    fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${demanda.uf}/municipios`,
-    )
-      .then((res) => res.json())
-      .then((data) => setCidades(data))
-      .catch((err) => console.error("Erro ao buscar cidades:", err));
-  }, [demanda.uf]);
 
   // Handler genérico para textos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

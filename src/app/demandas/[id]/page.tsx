@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Box, Button, CircularProgress, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, IconButton, Typography, Chip, alpha
+  DialogActions, TextField, IconButton, Typography, Chip, alpha,
+  Snackbar, Alert, Fab, Zoom
 } from "@mui/material";
 import {
   Save as SaveIcon, ArrowBack as ArrowBackIcon, Edit as EditIcon,
-  ContentCopy as ContentCopyIcon, WhatsApp as WhatsAppIcon
+  ContentCopy as ContentCopyIcon, WhatsApp as WhatsAppIcon,
+  WarningAmber as WarningAmberIcon
 } from "@mui/icons-material";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +24,7 @@ import { AccessTime as AccessTimeIcon } from "@mui/icons-material";
 import { atualizarDemanda, buscarDemandaPorNumero } from "@/services/demandasService";
 import { buscarMovimentosDaDemanda, obterUltimaDataMovimento } from "@/services/movimentosService";
 import { buscarFaturamentosPorDemanda } from "@/services/faturamentosService";
+import { UFS_BRASIL, obterCidadesPorUF } from "@/utils/localidades";
 
 import InformacoesBasicas from "../_components/InformacoesBasicas";
 import Faturamento from "../_components/Faturamento";
@@ -38,8 +41,8 @@ export default function EditarDemandaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [ufs, setUfs] = useState<{ sigla: string; nome: string }[]>([]);
-  const [cidades, setCidades] = useState<{ nome: string }[]>([]);
+  const ufs = UFS_BRASIL;
+  const cidades = obterCidadesPorUF(demanda.uf);
 
   const [movimentosDemanda, setMovimentosDemanda] = useState<IMovimento[]>([]);
   const [contasEmAberto, setContasEmAberto] = useState<any[]>([]);
@@ -52,6 +55,22 @@ export default function EditarDemandaPage() {
   const [validandoNumero, setValidandoNumero] = useState(false);
   const [erroNumero, setErroNumero] = useState("");
 
+  // Controle de alterações não salvas, feedback de salvamento e confirmação de saída
+  const [snapshotSalvo, setSnapshotSalvo] = useState<string>("");
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [modalSairOpen, setModalSairOpen] = useState(false);
+  const destinoPendenteRef = useRef<string | "BACK" | null>(null);
+
+  const snapshotAtual = useMemo(
+    () => JSON.stringify({ demanda, faturamentos }),
+    [demanda, faturamentos]
+  );
+  const temAlteracoes = Boolean(snapshotSalvo && snapshotAtual !== snapshotSalvo);
+
   // 1. CARREGAMENTO INICIAL
   useEffect(() => {
     const fetchDadosDaDemanda = async () => {
@@ -60,9 +79,10 @@ export default function EditarDemandaPage() {
         const dadosDemanda = await buscarDemandaPorNumero(numeroDemandaDaURL);
 
         if (dadosDemanda) {
+          const dadosFaturamento = (await buscarFaturamentosPorDemanda(numeroDemandaDaURL)) || [];
           setDemanda(dadosDemanda);
-          const dadosFaturamento = await buscarFaturamentosPorDemanda(numeroDemandaDaURL);
-          setFaturamentos(dadosFaturamento || []);
+          setFaturamentos(dadosFaturamento);
+          setSnapshotSalvo(JSON.stringify({ demanda: dadosDemanda, faturamentos: dadosFaturamento }));
         } else {
           console.error("Demanda não encontrada.");
         }
@@ -76,19 +96,64 @@ export default function EditarDemandaPage() {
     fetchDadosDaDemanda();
   }, [numeroDemandaDaURL]);
 
-  // 2. IBGE
+  // Proteção ao fechar/recarregar a aba do navegador e ao clicar em links internos
   useEffect(() => {
-    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
-      .then((res) => res.json())
-      .then((data) => setUfs(data));
-  }, []);
+    if (!temAlteracoes) return;
 
-  useEffect(() => {
-    if (!demanda.uf) { setCidades([]); return; }
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${demanda.uf}/municipios`)
-      .then((res) => res.json())
-      .then((data) => setCidades(data));
-  }, [demanda.uf]);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+      if (anchor.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+      const urlDestino = new URL(anchor.href, window.location.origin);
+      if (
+        urlDestino.origin === window.location.origin &&
+        urlDestino.pathname !== window.location.pathname
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        destinoPendenteRef.current = urlDestino.pathname + urlDestino.search;
+        setModalSairOpen(true);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [temAlteracoes]);
+
+  const handleTentativaVoltar = () => {
+    if (temAlteracoes) {
+      destinoPendenteRef.current = "BACK";
+      setModalSairOpen(true);
+    } else {
+      router.back();
+    }
+  };
+
+  const confirmarSaidaSemSalvar = () => {
+    const destino = destinoPendenteRef.current;
+    setModalSairOpen(false);
+    setSnapshotSalvo(snapshotAtual);
+    if (destino === "BACK" || !destino) {
+      router.back();
+    } else {
+      router.push(destino);
+    }
+  };
 
   // 3. Financeiro
   useEffect(() => {
@@ -207,20 +272,38 @@ export default function EditarDemandaPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // IMPORTANTE: Como o número pode ter mudado, passamos o novo número como ID, 
-      // mas precisamos que o serviço lide com a alteração da chave (numero) no banco,
-      // ou garantimos que a função de atualizar procure pelo ID interno do banco se houver.
-      // Se a sua URL/API espera o numeroDaURL original para achar o registro, passe ele:
       await atualizarDemanda(numeroDemandaDaURL, demanda, faturamentos);
 
-      // Se o número mudou, redireciona para a nova URL correspondente
-      if (String(demanda.numero) !== numeroDemandaDaURL) {
-        router.push(`/demandas/${demanda.numero}`);
-      } else {
-        router.push("/demandas");
+      const numeroFinal = String(demanda.numero || numeroDemandaDaURL);
+      const [dadosDemandaAtualizados, dadosFaturamentoAtualizados] = await Promise.all([
+        buscarDemandaPorNumero(numeroFinal),
+        buscarFaturamentosPorDemanda(numeroFinal),
+      ]);
+
+      const demandaNova = dadosDemandaAtualizados || demanda;
+      const faturamentosNovos = dadosFaturamentoAtualizados || faturamentos;
+
+      setDemanda(demandaNova);
+      setFaturamentos(faturamentosNovos);
+      setSnapshotSalvo(JSON.stringify({ demanda: demandaNova, faturamentos: faturamentosNovos }));
+
+      setSnackbar({
+        open: true,
+        message: "Alterações salvas com sucesso!",
+        severity: "success",
+      });
+
+      // Se o número da demanda foi alterado pelo Admin, atualiza apenas o parâmetro na URL mantendo na mesma tela
+      if (numeroFinal !== numeroDemandaDaURL) {
+        router.replace(`/demandas/${numeroFinal}`);
       }
     } catch (error) {
       console.error("Erro ao salvar demanda:", error);
+      setSnackbar({
+        open: true,
+        message: "Erro ao salvar as alterações. Tente novamente.",
+        severity: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -229,14 +312,14 @@ export default function EditarDemandaPage() {
   if (loading) return <CircularProgress sx={{ display: "block", m: "10% auto" }} />;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: 1000, mx: "auto", pb: 5 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: 1000, mx: "auto", pb: 10 }}>
       {/* CABEÇALHO */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
 
           {/* LINHA SUPERIOR: Botão Voltar + Título Principal + Botão Editar */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Button variant="outlined" onClick={() => router.back()} sx={{ minWidth: "auto", p: 1, borderRadius: 2 }}>
+            <Button variant="outlined" onClick={handleTentativaVoltar} sx={{ minWidth: "auto", p: 1, borderRadius: 2 }}>
               <ArrowBackIcon />
             </Button>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
@@ -390,6 +473,70 @@ export default function EditarDemandaPage() {
           ultimaDataAtualizacao={ultimaDataAtualizacao} contasEmAberto={contasEmAberto} totalBoletosEmAberto={totalBoletosEmAberto}
         />
       )}
+
+      {/* BOTÃO FLUTUANTE DE SALVAR (Exibido apenas quando há alterações pendentes) */}
+      <Zoom in={temAlteracoes} unmountOnExit>
+        <Fab
+          variant="extended"
+          color="primary"
+          onClick={handleSave}
+          disabled={saving}
+          sx={{
+            position: "fixed",
+            bottom: { xs: 80, md: 32 },
+            right: { xs: 16, md: 32 },
+            zIndex: 1200,
+            px: 3,
+            fontWeight: 700,
+            boxShadow: 6,
+          }}
+        >
+          {saving ? (
+            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+          ) : (
+            <SaveIcon sx={{ mr: 1 }} />
+          )}
+          {saving ? "Salvando..." : "Salvar Alterações"}
+        </Fab>
+      </Zoom>
+
+      {/* MODAL DE CONFIRMAÇÃO AO SAIR COM ALTERAÇÕES NÃO SALVAS */}
+      <Dialog open={modalSairOpen} onClose={() => setModalSairOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, fontWeight: "bold", color: "warning.main" }}>
+          <WarningAmberIcon color="warning" />
+          Alterações não salvas
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">
+            Existem dados digitados que ainda não foram salvos. Deseja realmente voltar ou sair da página e descartar essas alterações?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setModalSairOpen(false)} variant="contained" color="primary">
+            Continuar Editando
+          </Button>
+          <Button onClick={confirmarSaidaSemSalvar} color="error" variant="outlined">
+            Sair sem Salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* NOTIFICAÇÃO DE FEEDBACK AO SALVAR */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%", fontWeight: 600 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

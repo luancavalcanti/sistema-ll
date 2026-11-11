@@ -219,7 +219,7 @@ export default function NovoDashboardPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Paper sx={{ p: 2, border: "1px solid #ddd", bgcolor: "#fff" }}>
+        <Paper sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
           <Typography variant="subtitle2">{label}</Typography>
           <Typography
             variant="body2"
@@ -288,7 +288,7 @@ export default function NovoDashboardPage() {
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
         {/* Top Demandas para Faturar */}
         <Box sx={{ gridColumn: { xs: 'span 12', md: role === "user" ? 'span 12' : 'span 6' } }}>
-            <Paper sx={{ p: 3, borderRadius: 3, height: "100%", border: "1px solid #e0e0e0", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+            <Paper sx={{ p: 3, borderRadius: 3, height: "100%", border: "1px solid", borderColor: "divider", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold" color="primary">Demandas em destaque</Typography>
                 <Chip label={`${topDemandasFaturar.length} demandas listadas`} size="small" color="primary" variant="outlined" />
@@ -306,7 +306,8 @@ export default function NovoDashboardPage() {
                       sx={{ 
                         display: 'flex',
                         flexWrap: 'wrap',
-                        borderBottom: idx === topDemandasFaturar.length - 1 ? "none" : "1px solid #f0f0f0", 
+                        borderBottom: idx === topDemandasFaturar.length - 1 ? "none" : "1px solid",
+                        borderColor: "divider", 
                         py: 1.5 
                       }}
                     >
@@ -363,7 +364,7 @@ export default function NovoDashboardPage() {
           {/* Últimos Movimentos */}
         {role !== "user" && (
           <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
-            <Paper sx={{ p: 3, borderRadius: 3, height: "100%", border: "1px solid #e0e0e0", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+            <Paper sx={{ p: 3, borderRadius: 3, height: "100%", border: "1px solid", borderColor: "divider", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold" color="primary">Últimas Movimentações</Typography>
                 <Button size="small" onClick={() => router.push("/movimento")}>Ver Extrato Completo</Button>
@@ -381,7 +382,8 @@ export default function NovoDashboardPage() {
                       sx={{ 
                         display: 'flex',
                         flexWrap: 'wrap',
-                        borderBottom: idx === ultimosMovimentos.length - 1 ? "none" : "1px solid #f0f0f0", 
+                        borderBottom: idx === ultimosMovimentos.length - 1 ? "none" : "1px solid",
+                        borderColor: "divider", 
                         py: 1.5 
                       }}
                     >

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Paper, Typography, Box, Button, TextField, IconButton, Alert, Tooltip, CircularProgress
+  Paper, Typography, Box, Button, TextField, IconButton, Alert, Tooltip, CircularProgress, alpha
 } from "@mui/material";
 import { 
   Add as AddIcon, 
@@ -116,7 +116,7 @@ export default function Faturamento({
         </Typography>
       ) : (
         faturamentos.map((fat, index) => (
-          <Box key={fat.id} sx={{ p: 2, border: "1px solid #eee", borderRadius: 2, bgcolor: fat.cancelada ? "#fff5f5" : "transparent", display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box key={fat.id} sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2, bgcolor: fat.cancelada ? alpha("#d32f2f", 0.08) : "transparent", display: "flex", flexDirection: "column", gap: 2 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: fat.cancelada ? "error.main" : "text.primary" }}>
                 {fat.cancelada ? `Nota Fiscal ${index + 1} (CANCELADA)` : `Nota Fiscal ${index + 1}`}

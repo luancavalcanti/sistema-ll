@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Paper, CircularProgress, List, ListItem, Divider } from "@mui/material";
+import { Box, Typography, Paper, CircularProgress, List, ListItem, Divider, alpha } from "@mui/material";
 
 interface ResumoFinanceiroProps {
   loadingFinanceiro: boolean;
@@ -50,7 +50,7 @@ export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda,
               </Typography>
             </Paper>
 
-            <Paper sx={{ p: 2, flex: 1, minWidth: "150px", borderLeft: "5px solid #2196f3", borderRadius: 2, bgcolor: "#f8fbff" }}>
+            <Paper sx={{ p: 2, flex: 1, minWidth: "150px", borderLeft: "5px solid #2196f3", borderRadius: 2, bgcolor: alpha("#2196f3", 0.08) }}>
               <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">Resultado da Obra</Typography>
               <Typography variant="h6" color="primary.main" fontWeight="600">
                 {saldoDemanda.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -69,7 +69,7 @@ export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda,
                     const dataFormatada = conta.data_vencimento ? conta.data_vencimento.split("-").reverse().join("/") : "";
                     return (
                       <React.Fragment key={conta.id}>
-                        <ListItem sx={{ py: 2, px: 3, display: "flex", flexWrap: "wrap", gap: 2, "&:hover": { bgcolor: "#fff3e0" }, bgcolor: "#fff8e1" }}>
+                        <ListItem sx={{ py: 2, px: 3, display: "flex", flexWrap: "wrap", gap: 2, "&:hover": { bgcolor: alpha("#ff9800", 0.14) }, bgcolor: alpha("#ff9800", 0.08) }}>
                           <Box sx={{ flex: 1, minWidth: "200px" }}>
                             <Typography variant="subtitle2" fontWeight="600">{conta.fornecedor}</Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -99,7 +99,7 @@ export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda,
               Movimentações Financeiras
             </Typography>
           )}
-          <Paper sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid #e0e0e0" }}>
+          <Paper sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
             <List disablePadding>
               {movimentosDemanda.map((mov, index) => {
                 const tituloCard = mov.observacao === "" || !mov.observacao ? mov.descricao : mov.observacao;
@@ -107,7 +107,7 @@ export default function ResumoFinanceiro({ loadingFinanceiro, movimentosDemanda,
 
                 return (
                   <React.Fragment key={mov.id}>
-                    <ListItem sx={{ py: 2, px: 3, display: "flex", flexWrap: "wrap", gap: 2, "&:hover": { bgcolor: "#f5f5f5" } }}>
+                    <ListItem sx={{ py: 2, px: 3, display: "flex", flexWrap: "wrap", gap: 2, "&:hover": { bgcolor: "action.hover" } }}>
                       <Box sx={{ flex: 1, minWidth: "200px" }}>
                         <Typography variant="subtitle2" fontWeight="600">{tituloCard}</Typography>
                         <Typography variant="caption" color="text.secondary">

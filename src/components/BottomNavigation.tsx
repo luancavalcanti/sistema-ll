@@ -13,6 +13,8 @@ import {
   Box,
   Typography,
   Avatar,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -20,15 +22,20 @@ import {
   ExitToApp as LogoutIcon,
   AccountBalanceWallet as MovimentoIcon,
   MoreVert as MoreVertIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
+  SettingsBrightness as SystemModeIcon,
 } from "@mui/icons-material";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import { useAuth } from "@/contexts/AuthContext";
+import { useThemeMode, ThemePreference } from "@/contexts/ThemeModeContext";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function BottomNavigation() {
   const { user, isAdmin, isUser, isConsulta } = useAuth();
+  const { preference, setPreference } = useThemeMode();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -178,6 +185,46 @@ export default function BottomNavigation() {
             <ListItemText primary={item.label} />
           </MenuItem>
         ))}
+
+        <Divider />
+
+        {/* Seletor de Tema */}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, fontWeight: 600 }}>
+            Tema da Interface
+          </Typography>
+          <ToggleButtonGroup
+            value={preference}
+            exclusive
+            fullWidth
+            size="small"
+            onChange={(_, novoModo: ThemePreference | null) => {
+              if (novoModo) setPreference(novoModo);
+            }}
+            sx={{
+              "& .MuiToggleButton-root": {
+                py: 0.5,
+                px: 1,
+                fontSize: "0.7rem",
+                textTransform: "none",
+                gap: 0.5,
+              },
+            }}
+          >
+            <ToggleButton value="light">
+              <LightModeIcon sx={{ fontSize: 16 }} />
+              Claro
+            </ToggleButton>
+            <ToggleButton value="system">
+              <SystemModeIcon sx={{ fontSize: 16 }} />
+              Sistema
+            </ToggleButton>
+            <ToggleButton value="dark">
+              <DarkModeIcon sx={{ fontSize: 16 }} />
+              Escuro
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
         <Divider />
 

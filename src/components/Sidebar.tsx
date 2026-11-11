@@ -15,6 +15,9 @@ import {
   useTheme,
   useMediaQuery,
   Avatar,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -23,8 +26,12 @@ import {
   AccountBalanceWallet as MovimentoIcon,
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
+  SettingsBrightness as SystemModeIcon,
 } from "@mui/icons-material";
 import { useAuth } from "@/contexts/AuthContext";
+import { useThemeMode, ThemePreference } from "@/contexts/ThemeModeContext";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ReceiptIcon from "@mui/icons-material/Receipt";
@@ -34,6 +41,7 @@ import Image from "next/image";
 export default function Sidebar() {
   // 1. TODOS OS HOOKS NO TOPO (Regra de Ouro do React)
   const { user, isAdmin, isUser, isConsulta } = useAuth();
+  const { preference, setPreference } = useThemeMode();
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
@@ -232,6 +240,78 @@ export default function Sidebar() {
       </List>
 
       <Box sx={{ mt: "auto", p: isCollapsed ? 1 : 2 }}>
+        <Divider sx={{ mb: 1.5 }} />
+
+        {/* Seletor de Tema (Claro / Sistema / Escuro) */}
+        <Box sx={{ mb: 1.5, display: "flex", justifyContent: "center" }}>
+          {isCollapsed ? (
+            <Tooltip
+              title={
+                preference === "system"
+                  ? "Tema: Padrão do Sistema (clique para Claro)"
+                  : preference === "light"
+                  ? "Tema: Claro (clique para Escuro)"
+                  : "Tema: Escuro (clique para Sistema)"
+              }
+              placement="right"
+            >
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  const proximo: ThemePreference =
+                    preference === "system"
+                      ? "light"
+                      : preference === "light"
+                      ? "dark"
+                      : "system";
+                  setPreference(proximo);
+                }}
+              >
+                {preference === "light" ? (
+                  <LightModeIcon fontSize="small" />
+                ) : preference === "dark" ? (
+                  <DarkModeIcon fontSize="small" />
+                ) : (
+                  <SystemModeIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <ToggleButtonGroup
+              value={preference}
+              exclusive
+              fullWidth
+              size="small"
+              onChange={(_, novoModo: ThemePreference | null) => {
+                if (novoModo) setPreference(novoModo);
+              }}
+              sx={{
+                "& .MuiToggleButton-root": {
+                  py: 0.5,
+                  px: 1,
+                  fontSize: "0.7rem",
+                  textTransform: "none",
+                  gap: 0.5,
+                },
+              }}
+            >
+              <ToggleButton value="light" title="Modo Claro">
+                <LightModeIcon sx={{ fontSize: 16 }} />
+                Claro
+              </ToggleButton>
+              <ToggleButton value="system" title="Padrão do Sistema">
+                <SystemModeIcon sx={{ fontSize: 16 }} />
+                Sistema
+              </ToggleButton>
+              <ToggleButton value="dark" title="Modo Escuro">
+                <DarkModeIcon sx={{ fontSize: 16 }} />
+                Escuro
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+        </Box>
+
         <Divider sx={{ mb: 2 }} />
 
         <Box
@@ -330,7 +410,8 @@ export default function Sidebar() {
               width: drawerWidth,
               boxSizing: "border-box",
               overflowX: "hidden",
-              borderRight: "1px solid #e0e0e0",
+              borderRight: "1px solid",
+              borderColor: "divider",
               transition: theme.transitions.create("width", {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
