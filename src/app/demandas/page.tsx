@@ -4,17 +4,26 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Box, Typography, Button, Chip, alpha, CircularProgress, 
   Paper, Badge, TextField, MenuItem, InputAdornment,
-  FormControlLabel, Switch
+  FormControlLabel, Switch, Divider
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Person as PersonIcon,
+  AccessTime as AccessTimeIcon,
+  ViewStream as GroupIcon
+} from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import Title from "@/components/Title";
 import { useAuth } from "@/contexts/AuthContext";
 import { IDemanda, STATUS_CONFIG } from "@/types/demanda";
 import { DemandaCardList } from "./_components/DemandaCardList";
+import { calcularDiasSemAtualizar } from "@/utils/sla";
 import { supabase } from "@/lib/supabase";
 
 import { buscarDemandas } from "@/services/demandasService";
+
+type TipoAgrupamento = "nenhum" | "gestor" | "status" | "dias_sem_atualizar";
 
 export default function DemandasPage() {
   const { user, nome, isAdmin, role, loading: authLoading } = useAuth();
@@ -27,6 +36,7 @@ export default function DemandasPage() {
   const [statusFiltro, setStatusFiltro] = useState<string>("Todos");
   const [busca, setBusca] = useState<string>("");
   const [mostrarCanceladas, setMostrarCanceladas] = useState<boolean>(false);
+  const [agrupamento, setAgrupamento] = useState<TipoAgrupamento>("nenhum");
   const [filtrosCarregados, setFiltrosCarregados] = useState(false);
 
   // 1. Carrega os filtros salvos na sessão ao montar a tela
@@ -35,11 +45,13 @@ export default function DemandasPage() {
     const savedStatus = sessionStorage.getItem("demandas_status");
     const savedBusca = sessionStorage.getItem("demandas_busca");
     const savedMostrarCanceladas = sessionStorage.getItem("demandas_mostrar_canceladas");
+    const savedAgrupamento = sessionStorage.getItem("demandas_agrupamento") as TipoAgrupamento | null;
 
     if (savedAno) setAnoFiltro(savedAno);
     if (savedStatus) setStatusFiltro(savedStatus);
     if (savedBusca) setBusca(savedBusca);
     if (savedMostrarCanceladas) setMostrarCanceladas(savedMostrarCanceladas === "true");
+    if (savedAgrupamento) setAgrupamento(savedAgrupamento);
 
     setFiltrosCarregados(true);
   }, []);
@@ -51,8 +63,23 @@ export default function DemandasPage() {
       sessionStorage.setItem("demandas_status", statusFiltro);
       sessionStorage.setItem("demandas_busca", busca);
       sessionStorage.setItem("demandas_mostrar_canceladas", mostrarCanceladas.toString());
+      sessionStorage.setItem("demandas_agrupamento", agrupamento);
     }
-  }, [anoFiltro, statusFiltro, busca, mostrarCanceladas, filtrosCarregados]);
+  }, [anoFiltro, statusFiltro, busca, mostrarCanceladas, agrupamento, filtrosCarregados]);
+
+  // Se desativar "Mostrar Canceladas / Declinadas" enquanto uma delas estava selecionada no filtro, volta para "Todos"
+  useEffect(() => {
+    if (!mostrarCanceladas && (statusFiltro === "Cancelada" || statusFiltro === "Declinada")) {
+      setStatusFiltro("Todos");
+    }
+  }, [mostrarCanceladas, statusFiltro]);
+
+  // Se o usuário não for admin e o agrupamento salvo for "gestor", volta para "nenhum"
+  useEffect(() => {
+    if (!authLoading && !isAdmin && agrupamento === "gestor") {
+      setAgrupamento("nenhum");
+    }
+  }, [authLoading, isAdmin, agrupamento]);
   const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState<string>("");
 
   useEffect(() => {
@@ -124,6 +151,113 @@ export default function DemandasPage() {
     });
   }, [demandasVisiveis, anoFiltro, statusFiltro, busca]);
 
+  // Normaliza o nome do gestor para evitar separar "Edvaldo" de "Edvaldo Cavalcanti"
+  const normalizarNomeGestor = (gestor?: string) => {
+    const g = (gestor || "").trim();
+    if (!g) return "Sem Gestor Definido";
+    if (g === "Edvaldo") return "Edvaldo Cavalcanti";
+    if (g === "Tiago") return "Tiago Santana";
+    return g;
+  };
+
+  // 👇 Lógica de Agrupamento (Gestor, Status ou Dias sem Atualizar decrescente)
+  const gruposDemandas = useMemo(() => {
+    if (agrupamento === "nenhum") return [];
+
+    if (agrupamento === "gestor") {
+      const mapa = new Map<string, IDemanda[]>();
+      demandasFiltradas.forEach((d) => {
+        const chave = normalizarNomeGestor(d.gestor);
+        if (!mapa.has(chave)) mapa.set(chave, []);
+        mapa.get(chave)!.push(d);
+      });
+
+      return Array.from(mapa.entries())
+        .sort(([a], [b]) => {
+          if (a === "Sem Gestor Definido") return 1;
+          if (b === "Sem Gestor Definido") return -1;
+          return a.localeCompare(b, "pt-BR");
+        })
+        .map(([titulo, itens]) => ({
+          chave: titulo,
+          titulo,
+          cor: undefined as string | undefined,
+          icone: "gestor" as const,
+          itens,
+        }));
+    }
+
+    if (agrupamento === "status") {
+      const ordemStatus = Object.keys(STATUS_CONFIG);
+      const mapa = new Map<string, IDemanda[]>();
+      demandasFiltradas.forEach((d) => {
+        const chave = d.status || "Sem Status";
+        if (!mapa.has(chave)) mapa.set(chave, []);
+        mapa.get(chave)!.push(d);
+      });
+
+      return Array.from(mapa.entries())
+        .sort(([a], [b]) => {
+          const idxA = ordemStatus.indexOf(a);
+          const idxB = ordemStatus.indexOf(b);
+          if (idxA === -1 && idxB === -1) return a.localeCompare(b, "pt-BR");
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
+        })
+        .map(([titulo, itens]) => ({
+          chave: titulo,
+          titulo,
+          cor: STATUS_CONFIG[titulo] || "#ccc",
+          icone: "status" as const,
+          itens,
+        }));
+    }
+
+    // agrupamento === "dias_sem_atualizar" (da maior quantidade de dias para a menor)
+    const mapa = new Map<number | null, IDemanda[]>();
+    demandasFiltradas.forEach((d) => {
+      const dias = calcularDiasSemAtualizar(d.atualizado_em || d.criadoEm);
+      if (!mapa.has(dias)) mapa.set(dias, []);
+      mapa.get(dias)!.push(d);
+    });
+
+    return Array.from(mapa.entries())
+      .sort(([diasA], [diasB]) => {
+        if (diasA === null && diasB === null) return 0;
+        if (diasA === null) return 1;
+        if (diasB === null) return -1;
+        return diasB - diasA; // Maior quantidade de dias primeiro
+      })
+      .map(([dias, itens]) => {
+        const titulo =
+          dias === null
+            ? "Sem data de atualização"
+            : dias === 0
+              ? "Atualizadas hoje (0 dias)"
+              : dias === 1
+                ? "1 dia sem atualizar"
+                : `${dias} dias sem atualizar`;
+        return {
+          chave: `dias-${dias ?? "null"}`,
+          titulo,
+          cor: undefined as string | undefined,
+          icone: "dias" as const,
+          itens,
+        };
+      });
+  }, [demandasFiltradas, agrupamento]);
+
+  // Status disponíveis nos filtros (oculta Cancelada e Declinada quando mostrarCanceladas === false)
+  const statusDisponiveisNoFiltro = useMemo(() => {
+    return Object.entries(STATUS_CONFIG).filter(([label]) => {
+      if (!mostrarCanceladas && (label === "Cancelada" || label === "Declinada")) {
+        return false;
+      }
+      return true;
+    });
+  }, [mostrarCanceladas]);
+
   if (loading || authLoading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
@@ -192,17 +326,41 @@ export default function DemandasPage() {
             </Button>
           ))}
         </Box>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={mostrarCanceladas}
-              onChange={(e) => setMostrarCanceladas(e.target.checked)}
-              size="small"
-              color="primary"
-            />
-          }
-          label={<Typography variant="body2" color="text.secondary" fontWeight="bold">Mostrar Canceladas / Declinadas</Typography>}
-        />
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <TextField
+            select
+            size="small"
+            label="Agrupar por"
+            value={agrupamento}
+            onChange={(e) => setAgrupamento(e.target.value as TipoAgrupamento)}
+            sx={{ minWidth: 230, bgcolor: "background.paper", borderRadius: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <GroupIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            }}
+          >
+            <MenuItem value="nenhum">Sem agrupamento</MenuItem>
+            {isAdmin && <MenuItem value="gestor">Gestor</MenuItem>}
+            <MenuItem value="status">Status</MenuItem>
+            <MenuItem value="dias_sem_atualizar">Dias sem atualizar (Maior → Menor)</MenuItem>
+          </TextField>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={mostrarCanceladas}
+                onChange={(e) => setMostrarCanceladas(e.target.checked)}
+                size="small"
+                color="primary"
+              />
+            }
+            label={<Typography variant="body2" color="text.secondary" fontWeight="bold">Mostrar Canceladas / Declinadas</Typography>}
+          />
+        </Box>
       </Box>
 
       {/* FILTRO DE STATUS - CELULAR */}
@@ -222,7 +380,7 @@ export default function DemandasPage() {
               Ver Todas
             </Box>
           </MenuItem>
-          {Object.entries(STATUS_CONFIG).map(([label, color]) => (
+          {statusDisponiveisNoFiltro.map(([label, color]) => (
             <MenuItem key={label} value={label}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: color }} />
@@ -249,7 +407,7 @@ export default function DemandasPage() {
           sx={{ fontWeight: "bold" }}
         />
 
-        {Object.entries(STATUS_CONFIG).map(([label, color]) => {
+        {statusDisponiveisNoFiltro.map(([label, color]) => {
           return (
             <Badge badgeContent={contagemStatusPorAno[label]} color="primary" key={label}>
               <Chip
@@ -272,17 +430,80 @@ export default function DemandasPage() {
       {/* LISTAGEM */}
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {demandasFiltradas.length === 0 ? (
-          <Paper sx={{ p: 10, textAlign: "center", bgcolor: "transparent", border: "2px dashed #ddd" }}>
+          <Paper sx={{ p: 10, textAlign: "center", bgcolor: "transparent", border: "2px dashed", borderColor: "divider" }}>
             <Typography color="text.secondary">
               {busca !== "" 
                 ? `Nenhuma demanda encontrada para "${busca}".` 
                 : "Nenhuma demanda encontrada neste filtro."}
             </Typography>
           </Paper>
-        ) : (
+        ) : agrupamento === "nenhum" ? (
           demandasFiltradas.map((demanda) => (
-            <DemandaCardList key={demanda.id} demanda={demanda} onClick={(d) => router.push(`/demandas/${d.numero}`)} />
+            <DemandaCardList
+              key={demanda.id}
+              demanda={demanda}
+              onClick={(d) => router.push(`/demandas/${d.numero}`)}
+            />
           ))
+        ) : (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {gruposDemandas.map((grupo) => {
+              const totalValorGrupo = grupo.itens.reduce((acc, d) => acc + (Number(d.valor) || 0), 0);
+              return (
+                <Box key={grupo.chave} sx={{ display: "flex", flexDirection: "column" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      mb: 1.5,
+                      px: 2,
+                      py: 1,
+                      borderRadius: 2,
+                      bgcolor: "action.hover",
+                      borderLeft: "4px solid",
+                      borderColor: grupo.cor || "primary.main",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {grupo.icone === "gestor" && <PersonIcon fontSize="small" color="primary" />}
+                      {grupo.icone === "dias" && <AccessTimeIcon fontSize="small" color="primary" />}
+                      {grupo.icone === "status" && (
+                        <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: grupo.cor || "primary.main" }} />
+                      )}
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                        {grupo.titulo}
+                      </Typography>
+                      <Chip
+                        label={`${grupo.itens.length} ${grupo.itens.length === 1 ? "demanda" : "demandas"}`}
+                        size="small"
+                        sx={{ fontWeight: 700, height: 22, fontSize: "0.75rem" }}
+                      />
+                    </Box>
+
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: "text.secondary" }}>
+                      Total:{" "}
+                      {totalValorGrupo.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </Typography>
+                  </Box>
+
+                  {grupo.itens.map((demanda) => (
+                    <DemandaCardList
+                      key={demanda.id}
+                      demanda={demanda}
+                      mostrarDiasSemAtualizar={agrupamento === "dias_sem_atualizar"}
+                      onClick={(d) => router.push(`/demandas/${d.numero}`)}
+                    />
+                  ))}
+                </Box>
+              );
+            })}
+          </Box>
         )}
       </Box>
     </Box>

@@ -8,15 +8,16 @@ import {
   Warning as WarningIcon
 } from "@mui/icons-material";
 import { IDemanda, STATUS_CONFIG } from "@/types/demanda";
-import { calcularSLA } from "@/utils/sla";
+import { calcularSLA, calcularDiasSemAtualizar } from "@/utils/sla";
 import { AccessTime as AccessTimeIcon } from "@mui/icons-material";
 
 interface Props {
   demanda: IDemanda;
   onClick: (d: IDemanda) => void;
+  mostrarDiasSemAtualizar?: boolean;
 }
 
-export const DemandaCardList = ({ demanda, onClick }: Props) => {
+export const DemandaCardList = ({ demanda, onClick, mostrarDiasSemAtualizar = false }: Props) => {
   const statusColor = STATUS_CONFIG[demanda.status] || "#ccc";
 
   // 👇 1. Identificamos as condições de status
@@ -45,9 +46,13 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
   // e ainda falta faturar (faltaFaturar > 0.01)
   const isParcialmenteFaturado = valorTotal > 0 && totalFaturado > 0 && faltaFaturar > 0.01;
 
-  // 👇 4. Cálculo do SLA (Atraso)
-  const sla = calcularSLA(demanda.status, demanda.atualizado_em || demanda.criadoEm);
+  // 👇 4. Cálculo do SLA (Atraso) e dias sem atualizar
+  const dataRef = demanda.atualizado_em || demanda.criadoEm;
+  const sla = calcularSLA(demanda.status, dataRef);
   const isSlaAtrasado = sla.atrasada;
+  const diasSemAtualizar = calcularDiasSemAtualizar(dataRef);
+  const exibirChipDias = isSlaAtrasado || (mostrarDiasSemAtualizar && diasSemAtualizar !== null);
+  const diasParaExibir = isSlaAtrasado ? sla.diasOcioso : (diasSemAtualizar ?? 0);
 
   return (
     <Paper
@@ -102,13 +107,19 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
           </Box>
 
           {/* SLA no canto direito superior (Mobile) / Fica na terceira coluna no Desktop */}
-          {isSlaAtrasado && (
+          {exibirChipDias && (
             <Chip 
               icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
-              label={`${sla.diasOcioso} dias`}
-              sx={{ display: { xs: "flex", sm: "none" }, height: 22, fontSize: '0.7rem', fontWeight: 700, bgcolor: alpha("#d32f2f", 0.05) }}
+              label={`${diasParaExibir} ${diasParaExibir === 1 ? 'dia' : 'dias'}`}
+              sx={{
+                display: { xs: "flex", sm: "none" },
+                height: 22,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                bgcolor: isSlaAtrasado ? alpha("#d32f2f", 0.05) : "action.hover"
+              }}
               size="small"
-              color="error"
+              color={isSlaAtrasado ? "error" : "default"}
               variant="outlined"
             />
           )}
@@ -133,14 +144,20 @@ export const DemandaCardList = ({ demanda, onClick }: Props) => {
           {/* LINHA 1 DESKTOP / DIREITA MOBILE */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, order: { xs: 1, sm: 1 } }}>
             {/* SLA apenas Desktop (Fica do lado do Valor) */}
-            {isSlaAtrasado && (
+            {exibirChipDias && (
               <Chip 
                 icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
-                label={`${sla.diasOcioso} dias`}
+                label={`${diasParaExibir} ${diasParaExibir === 1 ? 'dia' : 'dias'}`}
                 size="small"
-                color="error"
+                color={isSlaAtrasado ? "error" : "default"}
                 variant="outlined"
-                sx={{ display: { xs: "none", sm: "flex" }, fontWeight: 700, bgcolor: alpha("#d32f2f", 0.05), height: 24, fontSize: '0.75rem' }}
+                sx={{
+                  display: { xs: "none", sm: "flex" },
+                  fontWeight: 700,
+                  bgcolor: isSlaAtrasado ? alpha("#d32f2f", 0.05) : "action.hover",
+                  height: 24,
+                  fontSize: '0.75rem'
+                }}
               />
             )}
             <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: { xs: '0.95rem', sm: '0.95rem' } }}>

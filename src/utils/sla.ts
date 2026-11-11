@@ -14,6 +14,35 @@ export const SLA_DIAS: Record<string, number | null> = {
 };
 
 /**
+ * Calcula a quantidade de dias corridos desde a última atualização (independente do status).
+ */
+export const calcularDiasSemAtualizar = (dataAtualizacao: string | null | undefined): number | null => {
+  if (!dataAtualizacao) return null;
+
+  let safeDate = dataAtualizacao;
+
+  if (safeDate.includes(' ')) {
+    safeDate = safeDate.replace(' ', 'T');
+  }
+
+  safeDate = safeDate.replace(/(\.\d{3})\d+/, '$1');
+  safeDate = safeDate.replace(/\+00$/, 'Z');
+
+  const atualizadoEm = new Date(safeDate);
+
+  if (isNaN(atualizadoEm.getTime())) {
+    return null;
+  }
+
+  const hoje = new Date();
+  atualizadoEm.setHours(0, 0, 0, 0);
+  hoje.setHours(0, 0, 0, 0);
+
+  const diffTempo = hoje.getTime() - atualizadoEm.getTime();
+  return Math.max(0, Math.floor(diffTempo / (1000 * 3600 * 24)));
+};
+
+/**
  * Calcula se a demanda está com o SLA estourado.
  * Retorna um objeto com os dias em atraso (se houver).
  */
