@@ -68,6 +68,72 @@ export default function Faturamento({
     });
   };
 
+  // --- EXTRAÇÃO INTELIGENTE DA CHAVE DE ACESSO NFS-e (50 DÍGITOS - PADRÃO NACIONAL) ---
+  // Estrutura oficial SEFIN Nacional (50 dígitos):
+  // [0..6]   (7)  Código IBGE do Município (ex: 2609600 = Olinda/PE)
+  // [7]      (1)  Ambiente Gerador (1 = Prefeitura, 2 = Sefin Nacional)
+  // [8]      (1)  Tipo de Inscrição (1 = CPF, 2 = CNPJ)
+  // [9..22]  (14) CNPJ/CPF do Emitente (ex: 03105742000170)
+  // [23..35] (13) Número da NFS-e com zeros à esquerda (ex: 0260000000004 -> 260000000004)
+  // [36..39] (4)  Ano e Mês de Competência/Emissão AAMM (ex: 2603 -> 2026-03)
+  // [40..48] (9)  Código Numérico Aleatório de Segurança
+  // [49]     (1)  Dígito Verificador (Módulo 11)
+  const extrairDadosChaveNFSe = (valorBruto: string) => {
+    const semPrefixo = valorBruto.trim().replace(/^NFS/i, "");
+    const apenasDigitos = semPrefixo.replace(/\D/g, "");
+
+    if (apenasDigitos.length !== 50) return null;
+
+    const numeroNFBruto = apenasDigitos.slice(23, 36);
+    const numeroNF = numeroNFBruto.replace(/^0+/, "") || "0";
+
+    const aamm = apenasDigitos.slice(36, 40);
+    const ano = `20${aamm.slice(0, 2)}`;
+    const mes = aamm.slice(2, 4);
+    const mesNum = Number(mes);
+    const anoMesValido = mesNum >= 1 && mesNum <= 12 ? `${ano}-${mes}` : null;
+
+    return {
+      chaveLimpa: apenasDigitos,
+      numeroNF,
+      anoMes: anoMesValido,
+    };
+  };
+
+  const handleChaveOuNotaChange = (
+    fat: IFaturamento,
+    campoOrigem: "codigo_verificacao" | "nota_fiscal",
+    novoValor: string
+  ) => {
+    const id = fat.id as string;
+    const dadosExtraidos = extrairDadosChaveNFSe(novoValor);
+
+    if (dadosExtraidos) {
+      // Preenche automaticamente a Chave de 50 dígitos e o Número da NF extraído
+      updateFaturamento(id, "codigo_verificacao", dadosExtraidos.chaveLimpa);
+      updateFaturamento(id, "nota_fiscal", dadosExtraidos.numeroNF);
+
+      // Se a Data Fat estiver vazia e a chave trouxer Ano/Mês válido (AAMM), já posiciona no Ano/Mês da nota
+      if (!fat.data_fat && dadosExtraidos.anoMes) {
+        const hoje = new Date();
+        const anoMesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+        const diaSugerido =
+          dadosExtraidos.anoMes === anoMesHoje
+            ? String(hoje.getDate()).padStart(2, "0")
+            : "01";
+        updateFaturamento(id, "data_fat", `${dadosExtraidos.anoMes}-${diaSugerido}`);
+      }
+
+      // Se o Valor Fat ainda estiver zerado e houver saldo a faturar na demanda, sugere o saldo restante
+      if ((!fat.valor_fat || Number(fat.valor_fat) === 0) && diferencaFaturamento > 0) {
+        updateFaturamento(id, "valor_fat", diferencaFaturamento.toFixed(2));
+      }
+      return;
+    }
+
+    updateFaturamento(id, campoOrigem, novoValor);
+  };
+
   // --- LÓGICA DO LINK DA NOTA FISCAL ---
   const abrirNotaFiscal = (nota_fiscal?: string, codigo_verificacao?: string) => {
     if (!nota_fiscal || !codigo_verificacao) return;
@@ -166,19 +232,20 @@ export default function Faturamento({
             {/* PRIMEIRA LINHA: Dados da Nota */}
             <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" }, flexWrap: "wrap" }}>
               <TextField 
+                sx={{ flex: 2, minWidth: "200px" }} 
+                label="Cód. Verificação / Chave (Cole aqui)" 
+                placeholder="Cole a chave de 50 dígitos para preencher o Nº da NF automaticamente"
+                size="small" 
+                value={fat.codigo_verificacao || ""} 
+                onChange={(e) => handleChaveOuNotaChange(fat, "codigo_verificacao", e.target.value)} 
+                disabled={fat.cancelada || isUser} 
+              />
+              <TextField 
                 sx={{ flex: 1, minWidth: "120px" }} 
                 label="Nota Fiscal" 
                 size="small" 
                 value={fat.nota_fiscal || ""} 
-                onChange={(e) => updateFaturamento(fat.id as string, "nota_fiscal", e.target.value)} 
-                disabled={fat.cancelada || isUser} 
-              />
-              <TextField 
-                sx={{ flex: 2, minWidth: "200px" }} 
-                label="Cód. Verificação / Chave" 
-                size="small" 
-                value={fat.codigo_verificacao || ""} 
-                onChange={(e) => updateFaturamento(fat.id as string, "codigo_verificacao", e.target.value)} 
+                onChange={(e) => handleChaveOuNotaChange(fat, "nota_fiscal", e.target.value)} 
                 disabled={fat.cancelada || isUser} 
               />
             </Box>

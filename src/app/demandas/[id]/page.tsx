@@ -204,15 +204,15 @@ export default function EditarDemandaPage() {
   };
 
   const updateFaturamento = (id: string, field: string, value: any) => {
-    setFaturamentos(faturamentos.map(fat => fat.id === id ? { ...fat, [field]: value } : fat));
+    setFaturamentos(prev => prev.map(fat => fat.id === id ? { ...fat, [field]: value } : fat));
   };
 
   const cancelarFaturamento = (id: string) => {
-    setFaturamentos(faturamentos.map(fat => fat.id === id ? { ...fat, valor_fat: 0, valor_cred: 0, cancelada: true } : fat));
+    setFaturamentos(prev => prev.map(fat => fat.id === id ? { ...fat, valor_fat: 0, valor_cred: 0, cancelada: true } : fat));
   };
 
   const removerFaturamento = (id: string) => {
-    setFaturamentos(faturamentos.filter(fat => fat.id !== id));
+    setFaturamentos(prev => prev.filter(fat => fat.id !== id));
   };
 
   // Handler para Alterar o Número da Demanda
