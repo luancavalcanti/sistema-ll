@@ -137,14 +137,14 @@ export default function ContasAPagarPage() {
       <ContasResumo contasPendentes={contasPendentes} />
 
       {/* 👇 BARRA DE FILTROS */}
-      <Paper sx={{ p: 2, display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" }, bgcolor: "#f8f9fa" }}>
+      <Paper sx={{ p: 2, display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" }, bgcolor: "background.paper" }}>
         <TextField
           select
           label="Ano"
           size="small"
           value={anoFiltro}
           onChange={(e) => setAnoFiltro(e.target.value)}
-          sx={{ minWidth: 120, bgcolor: "#fff" }}
+          sx={{ minWidth: 120 }}
         >
           {listaAnos.map(ano => <MenuItem key={ano} value={ano}>{ano}</MenuItem>)}
         </TextField>
@@ -155,7 +155,7 @@ export default function ContasAPagarPage() {
           size="small"
           value={mesFiltro}
           onChange={(e) => setMesFiltro(e.target.value)}
-          sx={{ minWidth: 200, bgcolor: "#fff" }}
+          sx={{ minWidth: 200 }}
         >
           {listaMeses.map(mes => <MenuItem key={mes.valor} value={mes.valor}>{mes.label}</MenuItem>)}
         </TextField>

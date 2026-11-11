@@ -167,7 +167,7 @@ export default function DemandasPage() {
         placeholder="Buscar por número ou nome do local..."
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
-        sx={{ bgcolor: "#fff", borderRadius: 1 }}
+        sx={{ bgcolor: "background.paper", borderRadius: 1 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -214,7 +214,7 @@ export default function DemandasPage() {
           label="Filtrar por Status"
           value={statusFiltro}
           onChange={(e) => setStatusFiltro(e.target.value)}
-          sx={{ bgcolor: "#fff", borderRadius: 1 }}
+          sx={{ bgcolor: "background.paper", borderRadius: 1 }}
         >
           <MenuItem value="Todos">
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

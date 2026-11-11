@@ -17,8 +17,9 @@ export default function ResumoFinanceiro({ nomeMesSelecionado, ano, totalItens, 
       alignItems: "center",
       flexWrap: "wrap",
       gap: 2,
-      bgcolor: "#ffffff",
-      border: "1px solid #e0e0e0",
+      bgcolor: "background.paper",
+      border: "1px solid",
+      borderColor: "divider",
       boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
     }}>
       <Box sx={{ display: "flex", flexDirection: "column" }}>

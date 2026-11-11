@@ -124,7 +124,7 @@ export default function RelatorioContabilidadeModal({
       <DialogContent
         dividers
         sx={{
-          bgcolor: "#f8f9fa",
+          bgcolor: "background.default",
           display: "flex",
           flexDirection: "column",
           gap: 3,
@@ -138,7 +138,7 @@ export default function RelatorioContabilidadeModal({
             size="small"
             value={ano}
             onChange={(e) => setAno(e.target.value)}
-            sx={{ minWidth: 120, bgcolor: "#fff" }}
+            sx={{ minWidth: 120, bgcolor: "background.paper" }}
           >
             {["2024", "2025", "2026", "2027"].map((a) => (
               <MenuItem key={a} value={a}>
@@ -152,7 +152,7 @@ export default function RelatorioContabilidadeModal({
             size="small"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            sx={{ minWidth: 180, bgcolor: "#fff" }}
+            sx={{ minWidth: 180, bgcolor: "background.paper" }}
           >
             {MESES.map((m) => (
               <MenuItem key={m.valor} value={m.valor}>
@@ -174,7 +174,7 @@ export default function RelatorioContabilidadeModal({
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
-                <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+                <TableHead sx={{ bgcolor: "action.hover" }}>
                   <TableRow>
                     <TableCell><strong>NF</strong></TableCell>
                     <TableCell><strong>Data Emissão</strong></TableCell>
@@ -193,7 +193,7 @@ export default function RelatorioContabilidadeModal({
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow sx={{ bgcolor: "#eeeeee" }}>
+                  <TableRow sx={{ bgcolor: "action.selected" }}>
                     <TableCell colSpan={3} align="right">
                       <strong>TOTAL FATURADO:</strong>
                     </TableCell>
@@ -221,7 +221,7 @@ export default function RelatorioContabilidadeModal({
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
-                <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+                <TableHead sx={{ bgcolor: "action.hover" }}>
                   <TableRow>
                     <TableCell><strong>NF</strong></TableCell>
                     <TableCell><strong>Data Crédito</strong></TableCell>
@@ -242,7 +242,7 @@ export default function RelatorioContabilidadeModal({
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow sx={{ bgcolor: "#eeeeee" }}>
+                  <TableRow sx={{ bgcolor: "action.selected" }}>
                     <TableCell colSpan={2} align="right">
                       <strong>TOTAIS:</strong>
                     </TableCell>
@@ -276,7 +276,7 @@ export default function RelatorioContabilidadeModal({
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
-                <TableHead sx={{ bgcolor: "#fff4e5" }}>
+                <TableHead sx={{ bgcolor: "action.hover" }}>
                   <TableRow>
                     <TableCell><strong>NF</strong></TableCell>
                     <TableCell align="right"><strong>Valor NF</strong></TableCell>
@@ -302,7 +302,7 @@ export default function RelatorioContabilidadeModal({
                       </TableRow>
                     );
                   })}
-                  <TableRow sx={{ bgcolor: "#eeeeee" }}>
+                  <TableRow sx={{ bgcolor: "action.selected" }}>
                     <TableCell colSpan={3} align="right">
                       <strong>TOTAL DE RETENÇÕES:</strong>
                     </TableCell>
@@ -316,7 +316,7 @@ export default function RelatorioContabilidadeModal({
           )}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+      <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
         <Button onClick={onClose} color="inherit" startIcon={<CloseIcon />}>
           Fechar
         </Button>

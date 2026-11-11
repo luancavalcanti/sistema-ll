@@ -73,7 +73,7 @@ export default function RegrasClassificacaoModal({ open, onClose }: Props) {
         <AutoFixIcon color="primary" /> Regras de Auto-preenchimento
       </DialogTitle>
       
-      <DialogContent dividers sx={{ bgcolor: '#f8f9fa', minHeight: '300px' }}>
+      <DialogContent dividers sx={{ bgcolor: 'background.default', minHeight: '300px' }}>
         {loading ? (
           <CircularProgress sx={{ display: 'block', m: '10% auto' }} />
         ) : regras.length === 0 ? (

@@ -279,7 +279,7 @@ export function ModalCriarConta({
             variant="outlined"
             sx={{
               p: 2,
-              bgcolor: "#fcfcfc",
+              bgcolor: "action.hover",
               borderLeft: "4px solid",
               borderColor: "primary.main",
             }}

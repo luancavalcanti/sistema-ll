@@ -233,9 +233,10 @@ export function ModalEditarConta({
             alignItems: "center",
             justifyContent: "space-between",
             p: 1.5,
-            border: "1px dashed #ccc",
+            border: "1px dashed",
+            borderColor: "divider",
             borderRadius: 1,
-            bgcolor: contaEditando.arquivo_boleto ? "#f0f8ff" : "transparent",
+            bgcolor: contaEditando.arquivo_boleto ? "action.hover" : "transparent",
           }}
         >
           <Typography variant="body2">
@@ -267,9 +268,10 @@ export function ModalEditarConta({
             alignItems: "center",
             justifyContent: "space-between",
             p: 1.5,
-            border: "1px dashed #ccc",
+            border: "1px dashed",
+            borderColor: "divider",
             borderRadius: 1,
-            bgcolor: contaEditando.arquivo_nf ? "#fff0f5" : "transparent",
+            bgcolor: contaEditando.arquivo_nf ? "action.hover" : "transparent",
           }}
         >
           <Typography variant="body2">

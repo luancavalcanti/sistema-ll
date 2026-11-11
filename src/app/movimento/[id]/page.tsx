@@ -206,7 +206,7 @@ export default function EditarMovimentoPage() {
       </Box>
 
       {/* SEÇÃO 1: DADOS ORIGINAIS DO BANCO (Somente Leitura) */}
-      <Paper sx={{ p: 4, borderRadius: 3, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+      <Paper sx={{ p: 4, borderRadius: 3, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
         <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
           Dados Originais do OFX
         </Typography>

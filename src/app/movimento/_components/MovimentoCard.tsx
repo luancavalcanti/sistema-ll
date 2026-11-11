@@ -1,4 +1,4 @@
-import { Paper, Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
+import { Paper, Box, Typography, Chip, IconButton, Tooltip, alpha } from "@mui/material";
 import { WarningAmber as WarningIcon, CheckCircleOutline as CheckIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { IMovimento } from "@/types/movimento";
 
@@ -27,7 +27,7 @@ export default function MovimentoCard({
     <Paper
       onClick={onClick}
       sx={{
-        bgcolor: isDuplicada ? "#fff5f5" : (corBorda === "#ffc107" ? "#ffc1071a" : ""),
+        bgcolor: isDuplicada ? alpha("#d32f2f", 0.08) : (corBorda === "#ffc107" ? "#ffc1071a" : "background.paper"),
         display: "flex",
         flexDirection: { xs: "column", sm: "row" },
         borderLeft: `6px solid ${isDuplicada ? "#d32f2f" : corBorda}`,
@@ -36,7 +36,7 @@ export default function MovimentoCard({
         gap: { xs: 1, sm: 2 },
         alignItems: { xs: "flex-start", sm: "center" },
         cursor: isConsulta ? "default" : "pointer",
-        "&:hover": { bgcolor: isConsulta ? "inherit" : (isDuplicada ? "#ffebee" : "#f5f5f5") },
+        "&:hover": { bgcolor: isConsulta ? "inherit" : (isDuplicada ? alpha("#d32f2f", 0.14) : "action.hover") },
         transition: "background-color 0.2s",
       }}
     >
@@ -59,12 +59,12 @@ export default function MovimentoCard({
         {mov.classificacao ? (
           <Chip label={mov.classificacao} size="small" sx={{ fontWeight: "bold", height: 24 }} />
         ) : (
-          <Chip label="Sem Classificação" size="small" variant="outlined" sx={{ height: 24, color: "text.secondary", borderColor: "#ddd" }} />
+          <Chip label="Sem Classificação" size="small" variant="outlined" sx={{ height: 24, color: "text.secondary", borderColor: "divider" }} />
         )}
         {mov.demanda && <Chip label={`${mov.demanda}`} size="small" color="primary" variant="outlined" sx={{ height: 24 }} />}
         
         {isDuplicada && (
-          <Chip icon={<WarningIcon fontSize="small" />} label="Duplicado?" color="error" size="small" variant="outlined" sx={{ height: 24, fontWeight: "bold", bgcolor: "#fff" }} />
+          <Chip icon={<WarningIcon fontSize="small" />} label="Duplicado?" color="error" size="small" variant="outlined" sx={{ height: 24, fontWeight: "bold", bgcolor: "background.paper" }} />
         )}
       </Box>
 
@@ -96,14 +96,14 @@ export default function MovimentoCard({
           <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}> {/* flexShrink: 0 impede os botões de serem esmagados */}
             {onIgnore && (
               <Tooltip title="Marcar como autêntico (Manter no sistema)">
-                <IconButton onClick={(e) => handleActionClick(e, onIgnore)} color="success" size="small" sx={{ border: '1px solid', borderColor: 'success.main', bgcolor: '#fff' }}>
+                <IconButton onClick={(e) => handleActionClick(e, onIgnore)} color="success" size="small" sx={{ border: '1px solid', borderColor: 'success.main', bgcolor: 'background.paper' }}>
                   <CheckIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
             {onDelete && (
               <Tooltip title="Excluir duplicata do sistema">
-                <IconButton onClick={(e) => handleActionClick(e, onDelete)} color="error" size="small" sx={{ border: '1px solid', borderColor: 'error.main', bgcolor: '#fff' }}>
+                <IconButton onClick={(e) => handleActionClick(e, onDelete)} color="error" size="small" sx={{ border: '1px solid', borderColor: 'error.main', bgcolor: 'background.paper' }}>
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Tooltip>

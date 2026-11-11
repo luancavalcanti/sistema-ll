@@ -256,7 +256,7 @@ export default function ImportarOFXModal({
                 ? "Importação concluída!"
                 : "Nenhum dado novo encontrado."}
             </Alert>
-            <List sx={{ bgcolor: "#f8f9fa", borderRadius: 2 }}>
+            <List sx={{ bgcolor: "action.hover", borderRadius: 2 }}>
               <ListItem>
                 <ListItemText primary="Novos registros importados" />
                 <Typography variant="h6" color="success.main" fontWeight="bold">

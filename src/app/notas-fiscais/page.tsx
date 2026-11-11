@@ -207,7 +207,7 @@ export default function NotasFiscaisPage() {
           gap: 2,
           alignItems: "center",
           flexWrap: "wrap",
-          bgcolor: "#f8f9fa",
+          bgcolor: "background.paper",
           p: 2,
           borderRadius: 2,
         }}
@@ -218,7 +218,6 @@ export default function NotasFiscaisPage() {
           exclusive
           onChange={(_, newValue) => newValue && setTipoFiltro(newValue)}
           size="small"
-          sx={{ bgcolor: "#fff" }}
         >
           <ToggleButton value="por_ano" sx={{ fontWeight: "bold" }}>
             Por Ano
@@ -235,7 +234,7 @@ export default function NotasFiscaisPage() {
             size="small"
             value={ano}
             onChange={(e) => setAno(e.target.value)}
-            sx={{ minWidth: 120, bgcolor: "#fff", borderRadius: 1 }}
+            sx={{ minWidth: 120, borderRadius: 1 }}
           >
             <MenuItem value="Todos">Todos</MenuItem>
 

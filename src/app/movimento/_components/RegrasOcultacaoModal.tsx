@@ -150,7 +150,7 @@ export default function RegrasOcultacaoModal({ open, onClose }: RegrasOcultacaoM
             Nenhuma regra cadastrada.
           </Typography>
         ) : (
-          <List sx={{ bgcolor: "#f8f9fa", borderRadius: 2, maxHeight: "300px", overflow: "auto" }}>
+          <List sx={{ bgcolor: "action.hover", borderRadius: 2, maxHeight: "300px", overflow: "auto" }}>
             {regras.map((regra) => (
               <ListItem 
                 key={regra.id}
@@ -159,7 +159,7 @@ export default function RegrasOcultacaoModal({ open, onClose }: RegrasOcultacaoM
                     <DeleteIcon />
                   </IconButton>
                 }
-                sx={{ borderBottom: "1px solid #eee" }}
+                sx={{ borderBottom: "1px solid", borderColor: "divider" }}
               >
                 <ListItemText primary={regra.texto} sx={{ wordBreak: "break-word" }} />
               </ListItem>

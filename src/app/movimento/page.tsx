@@ -11,6 +11,7 @@ import {
   MenuItem,
   CircularProgress,
   Divider,
+  alpha,
 } from "@mui/material";
 import {
   FilterList as FilterIcon,
@@ -493,7 +494,7 @@ export default function MovimentoPage() {
           size="small"
           value={ano}
           onChange={(e) => setAno(e.target.value)}
-          sx={{ minWidth: 100, bgcolor: "#fff", borderRadius: 1 }}
+          sx={{ minWidth: 100, bgcolor: "background.paper", borderRadius: 1 }}
         >
           {anos.map((a) => (
             <MenuItem key={a} value={a}>
@@ -508,7 +509,7 @@ export default function MovimentoPage() {
           size="small"
           value={mes}
           onChange={(e) => setMes(e.target.value)}
-          sx={{ minWidth: 200, bgcolor: "#fff", borderRadius: 1 }}
+          sx={{ minWidth: 200, bgcolor: "background.paper", borderRadius: 1 }}
         >
           {MESES.map((m) => {
             const dadosMes = statusPorMes[m.valor];
@@ -563,7 +564,7 @@ export default function MovimentoPage() {
             gap: 2,
             flexWrap: "wrap",
             alignItems: "center",
-            bgcolor: "#f8f9fa",
+            bgcolor: "background.paper",
           }}
         >
           <TextField
@@ -675,7 +676,7 @@ export default function MovimentoPage() {
                       display: "flex",
                       flexDirection: "column",
                       gap: 2,
-                      bgcolor: "#fffafa", // Fundo levíssimo avermelhado para agrupar
+                      bgcolor: alpha("#d32f2f", 0.05),
                     }}
                   >
                     <Typography

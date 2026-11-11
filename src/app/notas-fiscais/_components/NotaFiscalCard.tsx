@@ -1,6 +1,6 @@
 "use client";
 
-import { Paper, Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
+import { Paper, Box, Typography, Chip, IconButton, Tooltip, alpha } from "@mui/material";
 import {
   Receipt as ReceiptIcon,
   CheckCircle as PaidIcon,
@@ -47,7 +47,7 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
           p: 2,
           gap: 2,
           alignItems: { xs: "flex-start", sm: "center" },
-          bgcolor: "#fff4f4",
+          bgcolor: alpha("#d32f2f", 0.08),
         }}
       >
         <Box
@@ -114,7 +114,7 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
           p: 2,
           gap: 2,
           alignItems: { xs: "flex-start", sm: "center" },
-          bgcolor: "#f5f5f5",
+          bgcolor: "action.hover",
           opacity: 0.8,
           cursor: "pointer",
           "&:hover": { opacity: 1 },
@@ -187,7 +187,7 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
             icon={<CanceledIcon />}
             label="Nota Cancelada"
             size="small"
-            sx={{ fontWeight: "bold", bgcolor: "#e0e0e0", color: "#757575" }}
+            sx={{ fontWeight: "bold", bgcolor: "action.selected", color: "text.secondary" }}
           />
           <Typography variant="h6" fontWeight="600" color="text.disabled">
             {Number(0).toLocaleString("pt-BR", {
@@ -221,7 +221,7 @@ export default function NotaFiscalCard({ nota, onClick }: NotaFiscalCardProps) {
         gap: 2,
         alignItems: { xs: "flex-start", sm: "center" },
         cursor: "pointer",
-        "&:hover": { bgcolor: "#f5f5f5" },
+        "&:hover": { bgcolor: "action.hover" },
         transition: "background-color 0.2s",
       }}
     >

@@ -200,7 +200,7 @@ export default function DashboardPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Paper sx={{ p: 2, border: "1px solid #ddd", bgcolor: "#fff" }}>
+        <Paper sx={{ p: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
           <Typography variant="subtitle2">{label}</Typography>
           <Typography
             variant="body2"

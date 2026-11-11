@@ -260,8 +260,8 @@ export default function NovaDemandaPage() {
             <MenuItem value="">
               <em>Nenhum</em>
             </MenuItem>
-            <MenuItem value="Edvaldo">Edvaldo Cavalcanti</MenuItem>
-            <MenuItem value="Tiago">Tiago Santana</MenuItem>
+            <MenuItem value="Edvaldo Cavalcanti">Edvaldo Cavalcanti</MenuItem>
+            <MenuItem value="Tiago Santana">Tiago Santana</MenuItem>
           </TextField>
         </Box>
 

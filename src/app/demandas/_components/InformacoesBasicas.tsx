@@ -45,6 +45,19 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
   const ufAtual = demanda.uf || "";
   const cidadeAtual = demanda.cidade || "";
 
+  const gestorNormalizado =
+    demanda.gestor === "Edvaldo"
+      ? "Edvaldo Cavalcanti"
+      : demanda.gestor === "Tiago"
+        ? "Tiago Santana"
+        : demanda.gestor || "";
+
+  const gestoresPadrao = ["Edvaldo Cavalcanti", "Tiago Santana"];
+  const opcoesGestores =
+    gestorNormalizado && !gestoresPadrao.includes(gestorNormalizado)
+      ? [gestorNormalizado, ...gestoresPadrao]
+      : gestoresPadrao;
+
   const opcoesUfs =
     ufAtual && !ufs.some((u) => u.sigla === ufAtual)
       ? [{ sigla: ufAtual, nome: ufAtual }, ...ufs]
@@ -63,9 +76,9 @@ export default function InformacoesBasicas({ demanda, handleChange, ufs, cidades
 
       <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
         <TextField sx={{ flex: 1 }} label="Cliente" name="cliente" value={demanda.cliente || ""} onChange={handleChange} />
-        <TextField select sx={{ flex: 1 }} label="Gestor" name="gestor" value={demanda.gestor || ""} onChange={handleChange}>
-            {["Edvaldo Cavalcanti", "Tiago Santana"].map((gestor, idx) => 
-                <MenuItem key ={idx} value={gestor}>{gestor}</MenuItem>
+        <TextField select sx={{ flex: 1 }} label="Gestor" name="gestor" value={gestorNormalizado} onChange={handleChange}>
+            {opcoesGestores.map((gestor, idx) => 
+                <MenuItem key={idx} value={gestor}>{gestor}</MenuItem>
             )}
         </TextField>
         <TextField 
