@@ -17,7 +17,14 @@ import {
   ListItemText,
   SelectChangeEvent,
   Alert,
+  IconButton,
+  Divider,
+  Button,
 } from "@mui/material";
+import {
+  Close as CloseIcon,
+  TouchApp as TouchAppIcon,
+} from "@mui/icons-material";
 import {
   ResponsiveContainer,
   BarChart,
@@ -42,6 +49,7 @@ import {
 } from "@/services/movimentosService";
 import Title from "@/components/Title";
 import MovimentoMobileTabs from "../_components/MovimentoMobileTabs";
+import MovimentoCard from "../_components/MovimentoCard";
 
 type TipoMovimento = "saidas" | "entradas";
 type PeriodoFiltro = "3m" | "6m" | "12m" | "ano_atual";
@@ -117,6 +125,7 @@ export default function MovimentoGraficosPage() {
   ]);
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("12m");
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>("barra");
+  const [mesSelecionado, setMesSelecionado] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin && !isConsulta) {
@@ -283,7 +292,7 @@ export default function MovimentoGraficosPage() {
     // Inicializa mapa por mês
     const mapa: Record<string, Record<string, number | string>> = {};
     mesesDoPeriodo.forEach(({ chave, label }) => {
-      mapa[chave] = { mes: label };
+      mapa[chave] = { chaveMes: chave, mes: label };
       dadosSelecionados.forEach((dado) => {
         mapa[chave][dado] = 0;
       });
@@ -338,6 +347,73 @@ export default function MovimentoGraficosPage() {
 
   const getLabelDado = (key: string) =>
     opcoesDados.find((o) => o.value === key)?.label || key;
+
+  // Limpa o mês selecionado caso o período mude e o mês não faça mais parte da lista
+  useEffect(() => {
+    if (
+      mesSelecionado &&
+      !mesesDoPeriodo.some((m) => m.chave === mesSelecionado)
+    ) {
+      setMesSelecionado(null);
+    }
+  }, [mesesDoPeriodo, mesSelecionado]);
+
+  // Handler para clique nas barras/pontos do gráfico
+  const selecionarMesPeloGrafico = (chaveOuLabel?: string) => {
+    if (!chaveOuLabel) return;
+    const encontrado = mesesDoPeriodo.find(
+      (m) => m.chave === chaveOuLabel || m.label === chaveOuLabel
+    );
+    if (encontrado) {
+      setMesSelecionado(encontrado.chave);
+    }
+  };
+
+  // 6. Filtra os movimentos que compõem a barra do mês selecionado
+  const movimentosDoMesSelecionado = useMemo(() => {
+    if (!mesSelecionado) return [];
+    const isSaida = tipoMovimento === "saidas";
+
+    return movimentosVisiveis
+      .filter((mov) => {
+        if (!mov.data || mov.data.slice(0, 7) !== mesSelecionado) return false;
+
+        const valorNum = Number(mov.valor || 0);
+        if (isSaida && valorNum >= 0) return false;
+        if (!isSaida && valorNum <= 0) return false;
+
+        const classif = (mov.classificacao || "").trim();
+
+        return dadosSelecionados.some((dado) => {
+          if (
+            (dado === TOTAL_SAIDAS_KEY && isSaida) ||
+            (dado === TOTAL_ENTRADAS_KEY && !isSaida)
+          ) {
+            return true;
+          }
+          if (dado === SEM_CLASSIFICACAO_KEY && !classif) {
+            return true;
+          }
+          return dado === classif;
+        });
+      })
+      .sort((a, b) => b.data.localeCompare(a.data));
+  }, [mesSelecionado, movimentosVisiveis, tipoMovimento, dadosSelecionados]);
+
+  const labelMesSelecionado = useMemo(() => {
+    if (!mesSelecionado) return "";
+    return (
+      mesesDoPeriodo.find((m) => m.chave === mesSelecionado)?.label ||
+      mesSelecionado
+    );
+  }, [mesSelecionado, mesesDoPeriodo]);
+
+  const totalMesSelecionado = useMemo(() => {
+    return movimentosDoMesSelecionado.reduce(
+      (acc, mov) => acc + Math.abs(Number(mov.valor || 0)),
+      0
+    );
+  }, [movimentosDoMesSelecionado]);
 
   if (authLoading || loading) {
     return <CircularProgress sx={{ display: "block", m: "10% auto" }} />;
@@ -477,6 +553,36 @@ export default function MovimentoGraficosPage() {
 
       {/* ÁREA DO GRÁFICO */}
       <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3 }}>
+        {tipoGrafico !== "pizza" && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1,
+              mb: 1.5,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "flex", alignItems: "center", gap: 0.5, fontWeight: 600 }}
+            >
+              <TouchAppIcon fontSize="small" color="action" />
+              Clique na barra de um mês para visualizar abaixo os lançamentos que a compõem
+            </Typography>
+            {mesSelecionado && (
+              <Chip
+                label={`Mês selecionado: ${labelMesSelecionado}`}
+                size="small"
+                color="primary"
+                onDelete={() => setMesSelecionado(null)}
+                sx={{ fontWeight: 700 }}
+              />
+            )}
+          </Box>
+        )}
         {dadosGraficoMensal.length === 0 ||
         (tipoGrafico === "pizza" && dadosGraficoPizza.length === 0) ? (
           <Alert severity="info">
@@ -490,6 +596,12 @@ export default function MovimentoGraficosPage() {
                 <BarChart
                   data={dadosGraficoMensal}
                   margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                  onClick={(state: any) => {
+                    const chave =
+                      state?.activePayload?.[0]?.payload?.chaveMes ||
+                      state?.activeLabel;
+                    if (chave) selecionarMesPeloGrafico(String(chave));
+                  }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="mes" />
@@ -510,6 +622,14 @@ export default function MovimentoGraficosPage() {
                       name={dado}
                       stackId="total"
                       fill={paletaCores[index % paletaCores.length]}
+                      style={{ cursor: "pointer" }}
+                      onClick={(barData: any) => {
+                        const chave =
+                          barData?.chaveMes ||
+                          barData?.payload?.chaveMes ||
+                          barData?.mes;
+                        if (chave) selecionarMesPeloGrafico(String(chave));
+                      }}
                       radius={
                         index === dadosSelecionados.length - 1
                           ? [4, 4, 0, 0]
@@ -522,6 +642,12 @@ export default function MovimentoGraficosPage() {
                 <LineChart
                   data={dadosGraficoMensal}
                   margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                  onClick={(state: any) => {
+                    const chave =
+                      state?.activePayload?.[0]?.payload?.chaveMes ||
+                      state?.activeLabel;
+                    if (chave) selecionarMesPeloGrafico(String(chave));
+                  }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="mes" />
@@ -623,6 +749,108 @@ export default function MovimentoGraficosPage() {
           );
         })}
       </Box>
+
+      {/* DETALHAMENTO DOS MOVIMENTOS DO MÊS CLICADO */}
+      {mesSelecionado && tipoGrafico !== "pizza" && (
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                <Typography variant="h6" fontWeight={800}>
+                  Detalhamento — {labelMesSelecionado}
+                </Typography>
+                <Chip
+                  label={`${movimentosDoMesSelecionado.length} ${
+                    movimentosDoMesSelecionado.length === 1 ? "lançamento" : "lançamentos"
+                  }`}
+                  size="small"
+                  sx={{ fontWeight: 700 }}
+                />
+                {dadosSelecionados.map((dado) => (
+                  <Chip
+                    key={dado}
+                    label={getLabelDado(dado)}
+                    size="small"
+                    color={tipoMovimento === "saidas" ? "error" : "success"}
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                ))}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Total composto na barra deste mês:{" "}
+                <strong style={{ color: tipoMovimento === "saidas" ? "#d32f2f" : "#2e7d32" }}>
+                  {formatarMoeda(totalMesSelecionado)}
+                </strong>
+              </Typography>
+            </Box>
+
+            <Button
+              size="small"
+              variant="outlined"
+              color="inherit"
+              startIcon={<CloseIcon />}
+              onClick={() => setMesSelecionado(null)}
+            >
+              Fechar
+            </Button>
+          </Box>
+
+          <Divider />
+
+          {movimentosDoMesSelecionado.length === 0 ? (
+            <Alert severity="info">
+              Nenhum lançamento encontrado neste mês para as categorias selecionadas.
+            </Alert>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {movimentosDoMesSelecionado.map((mov) => {
+                const classif = (mov.classificacao || "").trim();
+                const dadoMatchIndex = dadosSelecionados.findIndex((d) =>
+                  d === TOTAL_SAIDAS_KEY || d === TOTAL_ENTRADAS_KEY
+                    ? true
+                    : d === SEM_CLASSIFICACAO_KEY
+                      ? !classif
+                      : d === classif
+                );
+                const corBorda =
+                  dadoMatchIndex >= 0
+                    ? paletaCores[dadoMatchIndex % paletaCores.length]
+                    : tipoMovimento === "saidas"
+                      ? "#E57373"
+                      : "#66BB6A";
+                const tituloCard =
+                  !mov.observacao || mov.observacao.trim() === ""
+                    ? mov.descricao
+                    : mov.observacao;
+                const dataFormatada = mov.data
+                  ? mov.data.split("-").reverse().join("/")
+                  : "";
+
+                return (
+                  <MovimentoCard
+                    key={mov.id}
+                    mov={mov}
+                    corBorda={corBorda}
+                    tituloCard={tituloCard}
+                    dataFormatada={dataFormatada}
+                    isConsulta={Boolean(isConsulta)}
+                    onClick={() => !isConsulta && router.push(`/movimento/${mov.id}`)}
+                  />
+                );
+              })}
+            </Box>
+          )}
+        </Paper>
+      )}
     </Box>
   );
 }
