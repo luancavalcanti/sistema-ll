@@ -51,6 +51,7 @@ import {
 import Title from "@/components/Title";
 import MovimentoMobileTabs from "../_components/MovimentoMobileTabs";
 import MovimentoCard from "../_components/MovimentoCard";
+import EditarMovimentoModal from "../_components/EditarMovimentoModal";
 
 type TipoMovimento = "saidas" | "entradas";
 type PeriodoFiltro = "3m" | "6m" | "12m" | "ano_atual";
@@ -128,6 +129,8 @@ export default function MovimentoGraficosPage() {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("12m");
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>("barra");
   const [mesSelecionado, setMesSelecionado] = useState<string | null>(null);
+  const [movimentoEditandoId, setMovimentoEditandoId] = useState<string | null>(null);
+  const [triggerRefresh, setTriggerRefresh] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !isAdmin && !isConsulta) {
@@ -155,7 +158,7 @@ export default function MovimentoGraficosPage() {
     if (isAdmin || isConsulta) {
       carregarDados();
     }
-  }, [isAdmin, isConsulta]);
+  }, [isAdmin, isConsulta, triggerRefresh]);
 
   // 1. Filtra movimentos aplicando as regras de ocultação
   const movimentosVisiveis = useMemo(() => {
@@ -921,7 +924,7 @@ export default function MovimentoGraficosPage() {
                     tituloCard={tituloCard}
                     dataFormatada={dataFormatada}
                     isConsulta={Boolean(isConsulta)}
-                    onClick={() => !isConsulta && router.push(`/movimento/${mov.id}`)}
+                    onClick={() => !isConsulta && setMovimentoEditandoId(mov.id)}
                   />
                 );
               })}
@@ -929,6 +932,13 @@ export default function MovimentoGraficosPage() {
           )}
         </Paper>
       )}
+
+      <EditarMovimentoModal
+        open={Boolean(movimentoEditandoId)}
+        movimentoId={movimentoEditandoId}
+        onClose={() => setMovimentoEditandoId(null)}
+        onSuccess={() => setTriggerRefresh((prev) => prev + 1)}
+      />
     </Box>
   );
 }

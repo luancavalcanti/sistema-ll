@@ -40,6 +40,7 @@ import ResumoFinanceiro from "./_components/ResumoFinanceiro";
 import MovimentoCard from "./_components/MovimentoCard";
 import RegrasClassificacaoModal from "./_components/RegrasClassificacaoModal";
 import MovimentoMobileTabs from "./_components/MovimentoMobileTabs";
+import EditarMovimentoModal from "./_components/EditarMovimentoModal";
 
 const MESES = [
   { valor: "01", nome: "Janeiro" },
@@ -64,6 +65,7 @@ export default function MovimentoPage() {
   const [loading, setLoading] = useState(true);
   const [triggerRefresh, setTriggerRefresh] = useState(0);
   const [modalAutoRegrasOpen, setModalAutoRegrasOpen] = useState(false);
+  const [movimentoEditandoId, setMovimentoEditandoId] = useState<string | null>(null);
 
   // Armazena os IDs dos movimentos marcados como "Autênticos" (Não Duplicados)
   const [ignoradosDuplicidade, setIgnoradosDuplicidade] = useState<string[]>(
@@ -315,7 +317,7 @@ export default function MovimentoPage() {
             ? () => handleExcluirDuplicata(mov.id, Number(mov.valor))
             : undefined
         }
-        onClick={() => !isConsulta && router.push(`/movimento/${mov.id}`)}
+        onClick={() => !isConsulta && setMovimentoEditandoId(mov.id)}
       />
     );
   };
@@ -778,6 +780,12 @@ export default function MovimentoPage() {
           setModalAutoRegrasOpen(false);
           setTriggerRefresh((prev) => prev + 1);
         }}
+      />
+      <EditarMovimentoModal
+        open={Boolean(movimentoEditandoId)}
+        movimentoId={movimentoEditandoId}
+        onClose={() => setMovimentoEditandoId(null)}
+        onSuccess={() => setTriggerRefresh((prev) => prev + 1)}
       />
     </Box>
   );
