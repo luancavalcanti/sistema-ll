@@ -39,6 +39,7 @@ import Title from "@/components/Title";
 import ResumoFinanceiro from "./_components/ResumoFinanceiro";
 import MovimentoCard from "./_components/MovimentoCard";
 import RegrasClassificacaoModal from "./_components/RegrasClassificacaoModal";
+import MovimentoMobileTabs from "./_components/MovimentoMobileTabs";
 
 const MESES = [
   { valor: "01", nome: "Janeiro" },
@@ -376,6 +377,7 @@ export default function MovimentoPage() {
         pb: 5,
       }}
     >
+      <MovimentoMobileTabs />
       {/* CABEÇALHO E FILTROS MANTIDOS IGUAIS... */}
       <Box
         sx={{

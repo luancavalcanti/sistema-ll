@@ -18,6 +18,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
+  Collapse,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -29,6 +30,10 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   SettingsBrightness as SystemModeIcon,
+  ExpandLess,
+  ExpandMore,
+  BarChart as BarChartIcon,
+  ReceiptLong as ExtratosIcon,
 } from "@mui/icons-material";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeMode, ThemePreference } from "@/contexts/ThemeModeContext";
@@ -52,6 +57,9 @@ export default function Sidebar() {
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+  const [movimentoOpen, setMovimentoOpen] = useState<boolean>(
+    pathname?.startsWith("/movimento") || false
+  );
 
   // 2. Efeitos
   useEffect(() => {
@@ -191,10 +199,17 @@ export default function Sidebar() {
 
             {/*--- Menu Movimento ---*/}
             <ListItemButton
-              onClick={() => handleNavigation("/movimento")}
-              selected={pathname === "/movimento"}
+              onClick={() => {
+                if (isCollapsed) {
+                  handleNavigation("/movimento");
+                } else {
+                  setMovimentoOpen(!movimentoOpen);
+                }
+              }}
+              selected={pathname?.startsWith("/movimento")}
               sx={{
                 borderRadius: 2,
+                mb: 0.5,
                 justifyContent: isCollapsed ? "center" : "flex-start",
                 px: isCollapsed ? 1 : 2.5,
               }}
@@ -208,8 +223,47 @@ export default function Sidebar() {
               >
                 <MovimentoIcon />
               </ListItemIcon>
-              {!isCollapsed && <ListItemText primary="Movimento" />}
+              {!isCollapsed && (
+                <>
+                  <ListItemText primary="Movimento" />
+                  {movimentoOpen ? <ExpandLess /> : <ExpandMore />}
+                </>
+              )}
             </ListItemButton>
+
+            {!isCollapsed && (
+              <Collapse in={movimentoOpen} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding sx={{ pl: 2 }}>
+                  <ListItemButton
+                    onClick={() => handleNavigation("/movimento")}
+                    selected={pathname === "/movimento"}
+                    sx={{ borderRadius: 2, mb: 0.5, py: 0.75 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ExtratosIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Extratos"
+                      primaryTypographyProps={{ fontSize: "0.875rem" }}
+                    />
+                  </ListItemButton>
+
+                  <ListItemButton
+                    onClick={() => handleNavigation("/movimento/graficos")}
+                    selected={pathname === "/movimento/graficos"}
+                    sx={{ borderRadius: 2, mb: 0.5, py: 0.75 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <BarChartIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Gráficos"
+                      primaryTypographyProps={{ fontSize: "0.875rem" }}
+                    />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            )}
           </>
         ) : null}
         {isAdmin && (
