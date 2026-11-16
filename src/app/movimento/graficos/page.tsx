@@ -20,6 +20,7 @@ import {
   IconButton,
   Divider,
   Button,
+  useTheme,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -114,6 +115,7 @@ const formatarMoedaCompacta = (valor: number) => {
 export default function MovimentoGraficosPage() {
   const { isAdmin, isConsulta, loading: authLoading } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
 
   const [movimentos, setMovimentos] = useState<IMovimento[]>([]);
   const [regrasOcultacao, setRegrasOcultacao] = useState<string[]>([]);
@@ -415,6 +417,42 @@ export default function MovimentoGraficosPage() {
     );
   }, [movimentosDoMesSelecionado]);
 
+  // Renderizador customizado do rótulo do eixo X para destacar o mês selecionado
+  const renderCustomXAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    const isSelected = Boolean(
+      mesSelecionado && payload?.value === labelMesSelecionado
+    );
+    return (
+      <g
+        transform={`translate(${x},${y})`}
+        style={{ cursor: "pointer" }}
+        onClick={() => selecionarMesPeloGrafico(payload?.value)}
+      >
+        {isSelected && (
+          <rect
+            x={-28}
+            y={4}
+            width={56}
+            height={22}
+            rx={6}
+            fill={theme.palette.primary.main}
+          />
+        )}
+        <text
+          x={0}
+          y={19}
+          textAnchor="middle"
+          fill={isSelected ? "#ffffff" : theme.palette.text.secondary}
+          fontWeight={isSelected ? 800 : 400}
+          fontSize={12}
+        >
+          {payload?.value}
+        </text>
+      </g>
+    );
+  };
+
   if (authLoading || loading) {
     return <CircularProgress sx={{ display: "block", m: "10% auto" }} />;
   }
@@ -590,7 +628,18 @@ export default function MovimentoGraficosPage() {
             período.
           </Alert>
         ) : (
-          <Box sx={{ width: "100%", height: { xs: 340, sm: 420 } }}>
+          <Box
+            sx={{
+              width: "100%",
+              height: { xs: 340, sm: 420 },
+              "& .recharts-wrapper, & .recharts-surface, & .recharts-layer": {
+                outline: "none",
+              },
+              "& *:focus": {
+                outline: "none",
+              },
+            }}
+          >
             <ResponsiveContainer width="100%" height="100%">
               {tipoGrafico === "barra" ? (
                 <BarChart
@@ -604,7 +653,7 @@ export default function MovimentoGraficosPage() {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="mes" />
+                  <XAxis dataKey="mes" tick={renderCustomXAxisTick} height={36} />
                   <YAxis tickFormatter={formatarMoedaCompacta} width={75} />
                   <Tooltip
                     formatter={(value: unknown, name: unknown) => [
@@ -615,28 +664,51 @@ export default function MovimentoGraficosPage() {
                   <Legend
                     formatter={(value: string) => getLabelDado(value)}
                   />
-                  {dadosSelecionados.map((dado, index) => (
-                    <Bar
-                      key={dado}
-                      dataKey={dado}
-                      name={dado}
-                      stackId="total"
-                      fill={paletaCores[index % paletaCores.length]}
-                      style={{ cursor: "pointer" }}
-                      onClick={(barData: any) => {
-                        const chave =
-                          barData?.chaveMes ||
-                          barData?.payload?.chaveMes ||
-                          barData?.mes;
-                        if (chave) selecionarMesPeloGrafico(String(chave));
-                      }}
-                      radius={
-                        index === dadosSelecionados.length - 1
-                          ? [4, 4, 0, 0]
-                          : [0, 0, 0, 0]
-                      }
-                    />
-                  ))}
+                  {dadosSelecionados.map((dado, index) => {
+                    const corBase = paletaCores[index % paletaCores.length];
+                    return (
+                      <Bar
+                        key={dado}
+                        dataKey={dado}
+                        name={dado}
+                        stackId="total"
+                        fill={corBase}
+                        style={{ cursor: "pointer" }}
+                        onClick={(barData: any) => {
+                          const chave =
+                            barData?.chaveMes ||
+                            barData?.payload?.chaveMes ||
+                            barData?.mes;
+                          if (chave) selecionarMesPeloGrafico(String(chave));
+                        }}
+                        radius={
+                          index === dadosSelecionados.length - 1
+                            ? [4, 4, 0, 0]
+                            : [0, 0, 0, 0]
+                        }
+                      >
+                        {dadosGraficoMensal.map((entry) => {
+                          const isSelected =
+                            mesSelecionado === String(entry.chaveMes);
+                          const isDimmed =
+                            Boolean(mesSelecionado) && !isSelected;
+                          return (
+                            <Cell
+                              key={`cell-${dado}-${entry.chaveMes}`}
+                              fill={corBase}
+                              fillOpacity={isDimmed ? 0.3 : 1}
+                              stroke={
+                                isSelected
+                                  ? theme.palette.text.primary
+                                  : "none"
+                              }
+                              strokeWidth={isSelected ? 2 : 0}
+                            />
+                          );
+                        })}
+                      </Bar>
+                    );
+                  })}
                 </BarChart>
               ) : tipoGrafico === "linha" ? (
                 <LineChart
@@ -650,7 +722,7 @@ export default function MovimentoGraficosPage() {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="mes" />
+                  <XAxis dataKey="mes" tick={renderCustomXAxisTick} height={36} />
                   <YAxis tickFormatter={formatarMoedaCompacta} width={75} />
                   <Tooltip
                     formatter={(value: unknown, name: unknown) => [
@@ -721,11 +793,14 @@ export default function MovimentoGraficosPage() {
         }}
       >
         {dadosSelecionados.map((dado, index) => {
-          const total = dadosGraficoMensal.reduce(
-            (acc, item) => acc + Number(item[dado] || 0),
-            0
+          const valoresMensais = dadosGraficoMensal.map((item) =>
+            Number(item[dado] || 0)
           );
+          const total = valoresMensais.reduce((acc, v) => acc + v, 0);
+          const media =
+            valoresMensais.length > 0 ? total / valoresMensais.length : 0;
           const cor = paletaCores[index % paletaCores.length];
+
           return (
             <Paper
               key={dado}
@@ -744,6 +819,9 @@ export default function MovimentoGraficosPage() {
                 sx={{ color: "text.primary", mt: 0.5 }}
               >
                 {formatarMoeda(total)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                Média mensal: <strong>{formatarMoeda(media)}</strong>
               </Typography>
             </Paper>
           );
