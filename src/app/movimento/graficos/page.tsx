@@ -160,9 +160,10 @@ export default function MovimentoGraficosPage() {
     }
   }, [isAdmin, isConsulta, triggerRefresh]);
 
-  // 1. Filtra movimentos aplicando as regras de ocultação
+  // 1. Filtra movimentos aplicando as regras de ocultação e desconsidera "Movimentação" (transferências entre contas)
   const movimentosVisiveis = useMemo(() => {
     return movimentos.filter((mov) => {
+      if ((mov.classificacao || "").trim() === "Movimentação") return false;
       const desc = (mov.descricao || "").toLowerCase();
       const obs = (mov.observacao || "").toLowerCase();
       const deveOcultar = regrasOcultacao.some((regra) => {

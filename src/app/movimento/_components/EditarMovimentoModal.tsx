@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { salvarRegra } from "@/services/regrasClassificacaoService";
 
-const TIPOS_DESPESA = ["Fixa", "Obra", "Tributo", "Empréstimo", "Outra"];
+const TIPOS_DESPESA = ["Fixa", "Obra", "Tributo", "Empréstimo", "Movimentação", "Outra"];
 const TIPOS_ENTRADA = [
   "Crédito Cliente",
   "Empréstimo",
@@ -43,6 +43,7 @@ const TIPOS_ENTRADA = [
   "Estorno Obra",
   "Estorno outros",
   "Rendimento",
+  "Movimentação",
   "Outros",
 ];
 

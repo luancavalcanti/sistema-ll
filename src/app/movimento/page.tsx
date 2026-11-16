@@ -85,12 +85,40 @@ export default function MovimentoPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filtrosExtras, setFiltrosExtras] = useState({
     banco: "",
+    tipoMovimento: "",
     classificacao: "",
   });
 
   const isConsulta = role === "consulta";
   const isFilterActive =
-    filtrosExtras.banco !== "" || filtrosExtras.classificacao !== "";
+    filtrosExtras.banco !== "" ||
+    filtrosExtras.tipoMovimento !== "" ||
+    filtrosExtras.classificacao !== "";
+
+  const CATEGORIAS_SAIDA = [
+    "Fixa",
+    "Obra",
+    "Tributo",
+    "Empréstimo",
+    "Movimentação",
+    "Outra",
+  ];
+  const CATEGORIAS_ENTRADA = [
+    "Crédito Cliente",
+    "Empréstimo",
+    "Aporte sócio",
+    "Estorno Obra",
+    "Estorno outros",
+    "Rendimento",
+    "Movimentação",
+    "Outros",
+  ];
+
+  const categoriasDisponiveisFiltro = useMemo(() => {
+    if (filtrosExtras.tipoMovimento === "entrada") return CATEGORIAS_ENTRADA;
+    if (filtrosExtras.tipoMovimento === "saida") return CATEGORIAS_SAIDA;
+    return Array.from(new Set([...CATEGORIAS_SAIDA, ...CATEGORIAS_ENTRADA]));
+  }, [filtrosExtras.tipoMovimento]);
 
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -192,6 +220,16 @@ export default function MovimentoPage() {
       if (filtrosExtras.banco && mov.banco !== filtrosExtras.banco)
         return false;
       if (
+        filtrosExtras.tipoMovimento === "entrada" &&
+        Number(mov.valor || 0) <= 0
+      )
+        return false;
+      if (
+        filtrosExtras.tipoMovimento === "saida" &&
+        Number(mov.valor || 0) >= 0
+      )
+        return false;
+      if (
         filtrosExtras.classificacao &&
         mov.classificacao !== filtrosExtras.classificacao
       )
@@ -279,7 +317,7 @@ export default function MovimentoPage() {
   }, [movimentosDuplicados]);
 
   const handleClearFilters = () =>
-    setFiltrosExtras({ banco: "", classificacao: "" });
+    setFiltrosExtras({ banco: "", tipoMovimento: "", classificacao: "" });
 
   if (loading)
     return <CircularProgress sx={{ display: "block", m: "10% auto" }} />;
@@ -590,7 +628,36 @@ export default function MovimentoPage() {
           </TextField>
           <TextField
             select
-            label="Tipo de Despesa"
+            label="Movimento"
+            size="small"
+            value={filtrosExtras.tipoMovimento}
+            onChange={(e) => {
+              const novoTipo = e.target.value;
+              const novasCategorias =
+                novoTipo === "entrada"
+                  ? CATEGORIAS_ENTRADA
+                  : novoTipo === "saida"
+                    ? CATEGORIAS_SAIDA
+                    : Array.from(new Set([...CATEGORIAS_SAIDA, ...CATEGORIAS_ENTRADA]));
+              const classifValida = novasCategorias.includes(filtrosExtras.classificacao)
+                ? filtrosExtras.classificacao
+                : "";
+              setFiltrosExtras({
+                ...filtrosExtras,
+                tipoMovimento: novoTipo,
+                classificacao: classifValida,
+              });
+            }}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="entrada">Entrada</MenuItem>
+            <MenuItem value="saida">Saída</MenuItem>
+          </TextField>
+
+          <TextField
+            select
+            label="Categoria"
             size="small"
             value={filtrosExtras.classificacao}
             onChange={(e) =>
@@ -599,10 +666,10 @@ export default function MovimentoPage() {
                 classificacao: e.target.value,
               })
             }
-            sx={{ minWidth: 170 }}
+            sx={{ minWidth: 180 }}
           >
-            <MenuItem value="">Todos</MenuItem>
-            {["Fixa", "Obra", "Tributo", "Empréstimo", "Outra"].map((t) => (
+            <MenuItem value="">Todas</MenuItem>
+            {categoriasDisponiveisFiltro.map((t) => (
               <MenuItem key={t} value={t}>
                 {t}
               </MenuItem>
